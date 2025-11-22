@@ -59,8 +59,25 @@ const player = new Player(scene, camera, terrain, renderer);
 // Multiplayer
 let multiplayer = null;
 
-// Handle Multiplayer Button
+// Check if running on localhost (local development)
+const isLocalhost = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' ||
+                    window.location.hostname === '';
+
+// Hide/disable Online button on localhost
+if (isLocalhost) {
+    DOMElements.btnMultiplayer.style.display = 'none';
+}
+
+// Handle Multiplayer Button (only works in production)
 DOMElements.btnMultiplayer.addEventListener('click', () => {
+    // Only allow Online mode in production (not localhost)
+    if (isLocalhost) {
+        console.warn('Online multiplayer is only available on the main server (Netlify). Use Singleplayer for local testing.');
+        alert('Online multiplayer is only available on the main server.\n\nPlease visit the deployed version on Netlify to use Online mode.');
+        return;
+    }
+    
     // Set Shared Seed for consistent world
     terrain.setSeed("multiplayer-shared-world-v1");
     
@@ -95,6 +112,9 @@ DOMElements.btnMultiplayer.addEventListener('click', () => {
     // Lock controls to start game
     player.controls.lock();
     DOMElements.menuMain.style.display = 'none';
+    
+    // Show Resume button for multiplayer
+    DOMElements.btnResume.style.display = 'block';
 });
 
 // Handle Back Button (Disconnect Multiplayer)
@@ -105,6 +125,9 @@ DOMElements.btnBackMain.addEventListener('click', () => {
         // Actually, if we disconnect, we might want to reset the object to ensure fresh state
         multiplayer = null;
         window.multiplayer = null;
+        
+        // Hide Resume button when disconnecting from multiplayer
+        DOMElements.btnResume.style.display = 'none';
     }
 });
 
