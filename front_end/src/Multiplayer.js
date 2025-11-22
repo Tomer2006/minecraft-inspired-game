@@ -14,9 +14,9 @@ export class Multiplayer {
     }
 
     connect() {
-        // Configuration: Set this to your Render backend URL after deployment
-        // Example: 'wss://my-minecraft-clone.onrender.com'
-        const PRODUCTION_BACKEND_URL = 'wss://YOUR_RENDER_URL_HERE'; 
+        // Configuration: Set this to your local backend tunnel URL
+        // This URL exposes your local backend to the internet via localtunnel
+        const PRODUCTION_BACKEND_URL = 'wss://shiny-teeth-cross.loca.lt'; 
 
         let socketUrl;
         
