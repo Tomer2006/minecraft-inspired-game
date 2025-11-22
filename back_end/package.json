@@ -1,5 +1,5 @@
 {
-  "name": "minecraft-clone",
+  "name": "minecraft-clone-backend",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",
@@ -15,3 +15,4 @@
     "ws": "^8.18.3"
   }
 }
+

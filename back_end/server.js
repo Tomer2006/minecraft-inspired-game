@@ -7,7 +7,7 @@ import { WebSocketServer } from 'ws';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 2025;
+const PORT = process.env.PORT || 2025;
 const WORLD_FILE = 'world-data.json';
 const PLAYERS_FILE = 'players-data.json';
 const SAVE_INTERVAL = 30000; // 30 seconds

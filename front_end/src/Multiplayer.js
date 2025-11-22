@@ -14,12 +14,28 @@ export class Multiplayer {
     }
 
     connect() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const port = 2025; // Hardcoded to match server.js
+        // Configuration: Set this to your Render backend URL after deployment
+        // Example: 'wss://my-minecraft-clone.onrender.com'
+        const PRODUCTION_BACKEND_URL = 'wss://YOUR_RENDER_URL_HERE'; 
+
+        let socketUrl;
         
-        console.log(`Connecting to multiplayer server at ${protocol}//${host}:${port}`);
-        this.ws = new WebSocket(`${protocol}//${host}:${port}`);
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Local development
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = 2025;
+            socketUrl = `${protocol}//${host}:${port}`;
+        } else {
+            // Production (Netlify)
+            socketUrl = PRODUCTION_BACKEND_URL;
+            if (socketUrl.includes('YOUR_RENDER_URL_HERE')) {
+                console.error('Please update PRODUCTION_BACKEND_URL in src/Multiplayer.js with your Render WebSocket URL');
+            }
+        }
+        
+        console.log(`Connecting to multiplayer server at ${socketUrl}`);
+        this.ws = new WebSocket(socketUrl);
 
         this.ws.onopen = () => {
             console.log('Connected to multiplayer server');
