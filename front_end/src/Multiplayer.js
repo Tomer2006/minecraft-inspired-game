@@ -10,6 +10,11 @@ export class Multiplayer {
         this.lastUpdate = 0;
         this.isConnected = false;
         
+        // Time synchronization
+        this.serverGameTime = null; // Server's authoritative game time
+        this.lastServerTimeUpdate = 0; // Timestamp when we received server time
+        this.useServerTime = false; // Flag to use server time instead of local
+        
         this.connect();
     }
 
@@ -115,6 +120,14 @@ export class Multiplayer {
                     console.log('Received initial world state');
                     this.localPlayer.terrain.loadModifiedBlocks(data.world);
                 }
+                
+                // Initialize synchronized game time
+                if (typeof data.gameTime === 'number') {
+                    this.serverGameTime = data.gameTime;
+                    this.lastServerTimeUpdate = Date.now();
+                    this.useServerTime = true;
+                    console.log('Synchronized to server time:', this.serverGameTime);
+                }
                 break;
             case 'player-joined':
                 if (data.id !== this.id) {
@@ -126,6 +139,12 @@ export class Multiplayer {
                 break;
             case 'state-update':
                 this.updatePlayers(data.players);
+                
+                // Update synchronized game time
+                if (typeof data.gameTime === 'number') {
+                    this.serverGameTime = data.gameTime;
+                    this.lastServerTimeUpdate = Date.now();
+                }
                 break;
             case 'block-update':
                 // Apply remote block update
@@ -218,9 +237,11 @@ export class Multiplayer {
         // Send update to server (20 times per second max)
         const now = performance.now();
         if (now - this.lastUpdate > 50 && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // Explicitly serialize position as plain object to ensure consistency
+            const pos = this.localPlayer.head.position;
             this.ws.send(JSON.stringify({
                 type: 'update',
-                position: this.localPlayer.head.position, 
+                position: { x: pos.x, y: pos.y, z: pos.z },
                 rotation: { x: this.localPlayer.head.rotation.x, y: this.localPlayer.head.rotation.y }
             }));
             this.lastUpdate = now;
@@ -290,5 +311,26 @@ export class Multiplayer {
             p.mesh.position.copy(targetPos);
             p.mesh.rotation.y = targetRotY;
         }
+    }
+    
+    // Get synchronized game time (server time + elapsed time since last update)
+    getGameTime() {
+        if (!this.useServerTime || this.serverGameTime === null) {
+            return null; // Not synchronized yet
+        }
+        
+        // Calculate elapsed time since last server update (in seconds)
+        const elapsedSeconds = (Date.now() - this.lastServerTimeUpdate) / 1000;
+        
+        // Add elapsed time to server time
+        let currentTime = this.serverGameTime + elapsedSeconds;
+        
+        // Wrap around if exceeding day duration
+        const DAY_DURATION = 1200; // 20 minutes
+        while (currentTime > DAY_DURATION) {
+            currentTime -= DAY_DURATION;
+        }
+        
+        return currentTime;
     }
 }

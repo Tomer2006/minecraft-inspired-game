@@ -14,6 +14,10 @@ const SAVE_INTERVAL = 30000; // 30 seconds
 
 // --- Game Constants (Mirrored from Chunk.js) ---
 const CHUNK_SIZE = 16;
+// Day/Night Cycle Constants (Mirrored from main.js)
+const DAY_DURATION = 1200; // 20 minutes in seconds
+const DAY_NIGHT_TICK_RATE = 20; // Update 20 times per second (every 50ms)
+const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 const BLOCK_IDS = {
   'air': 0,
   'grass': 1,
@@ -47,6 +51,10 @@ const MIME_TYPES = {
 let worldData = {};
 // Players: { "playerId": { position: {x,y,z}, rotation: {x,y} } }
 let playerData = {};
+// Game Time (Authoritative server time)
+let gameTime = DAY_DURATION * 0.25; // Start at noon
+let dayNightAccumulator = 0;
+const serverStartTime = Date.now();
 
 // Load Data
 function loadData() {
@@ -181,38 +189,81 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({
                     type: 'init',
                     id: id,
-                    position: playerData[id].position, // Send saved position
-                    rotation: playerData[id].rotation,
+                    position: { 
+                        x: playerData[id].position.x, 
+                        y: playerData[id].position.y, 
+                        z: playerData[id].position.z 
+                    },
+                    rotation: { 
+                        x: playerData[id].rotation.x, 
+                        y: playerData[id].rotation.y 
+                    },
                     players: Object.values(activePlayers).map(p => ({
                         id: p.id,
-                        position: p.position,
-                        rotation: p.rotation
+                        position: { x: p.position.x, y: p.position.y, z: p.position.z },
+                        rotation: { x: p.rotation.x, y: p.rotation.y }
                     })),
-                    world: getInitialWorldState()
+                    world: getInitialWorldState(),
+                    gameTime: gameTime // Send synchronized game time
                 }));
 
                 // Broadcast Join to others
                 broadcast({
                     type: 'player-joined',
                     id: id,
-                    position: activePlayers[id].position,
-                    rotation: activePlayers[id].rotation
+                    position: { 
+                        x: activePlayers[id].position.x, 
+                        y: activePlayers[id].position.y, 
+                        z: activePlayers[id].position.z 
+                    },
+                    rotation: { 
+                        x: activePlayers[id].rotation.x, 
+                        y: activePlayers[id].rotation.y 
+                    }
                 }, ws);
 
             } else if (data.type === 'update') {
                 if (id && activePlayers[id]) {
-                    activePlayers[id].position = data.position;
-                    activePlayers[id].rotation = data.rotation;
+                    // Validate position data structure
+                    if (data.position && typeof data.position.x === 'number' && 
+                        typeof data.position.y === 'number' && typeof data.position.z === 'number') {
+                        activePlayers[id].position = {
+                            x: data.position.x,
+                            y: data.position.y,
+                            z: data.position.z
+                        };
+                        
+                        // Update persistent storage
+                        if (playerData[id]) {
+                            playerData[id].position = { ...activePlayers[id].position };
+                        }
+                    }
                     
-                    // Update persistent storage
-                    if (playerData[id]) {
-                        playerData[id].position = data.position;
-                        playerData[id].rotation = data.rotation;
+                    // Validate rotation data structure
+                    if (data.rotation && typeof data.rotation.x === 'number' && 
+                        typeof data.rotation.y === 'number') {
+                        activePlayers[id].rotation = {
+                            x: data.rotation.x,
+                            y: data.rotation.y
+                        };
+                        
+                        // Update persistent storage
+                        if (playerData[id]) {
+                            playerData[id].rotation = { ...activePlayers[id].rotation };
+                        }
                     }
                 }
             } else if (data.type === 'block-update') {
-                // Handle Block Modification
+                // Handle Block Modification (including air/removal)
                 const { x, y, z, blockName } = data;
+                
+                // Validate block update data
+                if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number' || 
+                    typeof blockName !== 'string') {
+                    console.warn('Invalid block-update data:', data);
+                    return;
+                }
+                
                 const blockId = BLOCK_IDS[blockName];
 
                 if (blockId !== undefined) {
@@ -234,12 +285,19 @@ wss.on('connection', (ws) => {
                         worldData[chunkKey] = {};
                     }
 
+                    // Store block update (including air blocks for removal)
                     worldData[chunkKey][localKey] = blockId;
+                    
+                    // If block is air, we can optionally clean up the entry, but keeping it
+                    // ensures we track that this block was explicitly removed
 
+                    // Broadcast to all other clients
                     broadcast({
                         type: 'block-update',
                         x, y, z, blockName
                     }, ws);
+                } else {
+                    console.warn(`Unknown block name: ${blockName}`);
                 }
             }
         } catch (e) {
@@ -268,21 +326,42 @@ function broadcast(data, excludeWs) {
     });
 }
 
+// Server Tick: Update Game Time (Authoritative)
+setInterval(() => {
+    dayNightAccumulator += DAY_NIGHT_STEP;
+    
+    // Update game time using fixed time step
+    while (dayNightAccumulator >= DAY_NIGHT_STEP) {
+        gameTime += (DAY_NIGHT_STEP / 1000); // Add fixed step in seconds
+        if (gameTime > DAY_DURATION) gameTime -= DAY_DURATION;
+        dayNightAccumulator -= DAY_NIGHT_STEP;
+    }
+}, DAY_NIGHT_STEP);
+
 // Dedicated Server Tick: Broadcast World State
 setInterval(() => {
     // Only send necessary data (positions)
     const playerUpdates = {};
     for (const [pid, pData] of Object.entries(activePlayers)) {
+        // Ensure we send plain objects, not references
         playerUpdates[pid] = {
             id: pData.id,
-            position: pData.position,
-            rotation: pData.rotation
+            position: { 
+                x: pData.position.x, 
+                y: pData.position.y, 
+                z: pData.position.z 
+            },
+            rotation: { 
+                x: pData.rotation.x, 
+                y: pData.rotation.y 
+            }
         };
     }
     
     const snapshot = {
         type: 'state-update',
         players: playerUpdates,
+        gameTime: gameTime, // Include synchronized game time
         timestamp: Date.now()
     };
     

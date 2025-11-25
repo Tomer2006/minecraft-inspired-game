@@ -188,87 +188,111 @@ function animate() {
   // Day/Night Cycle Logic - Optimized to use Fixed Time Step
   const dayNightStart = performance.now();
   
-  // Accumulate time for fixed update using the clamped delta
-  dayNightAccumulator += deltaMs;
+  // Use synchronized server time in multiplayer mode, otherwise use local time
+  let currentGameTime = gameTime;
+  if (multiplayer && multiplayer.isConnected) {
+    const serverTime = multiplayer.getGameTime();
+    if (serverTime !== null) {
+      // Use server time (already synchronized)
+      currentGameTime = serverTime;
+    } else {
+      // Server time not available yet, continue with local time
+      dayNightAccumulator += deltaMs;
+      let steps = 0;
+      while (dayNightAccumulator >= DAY_NIGHT_STEP && steps < 5) {
+        gameTime += (DAY_NIGHT_STEP / 1000);
+        if (gameTime > DAY_DURATION) gameTime -= DAY_DURATION;
+        dayNightAccumulator -= DAY_NIGHT_STEP;
+        steps++;
+      }
+      currentGameTime = gameTime;
+    }
+  } else {
+    // Single player mode - use local time
+    // Accumulate time for fixed update using the clamped delta
+    dayNightAccumulator += deltaMs;
 
-  // Only run day/night logic if enough time has passed (20 ticks/sec)
-  // Limit max steps per frame to prevent hanging
-  let steps = 0;
-  while (dayNightAccumulator >= DAY_NIGHT_STEP && steps < 5) {
-    gameTime += (DAY_NIGHT_STEP / 1000); // Add fixed step in seconds
-    if (gameTime > DAY_DURATION) gameTime -= DAY_DURATION;
-    dayNightAccumulator -= DAY_NIGHT_STEP;
-    steps++;
-    
-    const timeProgress = gameTime / DAY_DURATION;
-    const angle = timeProgress * Math.PI * 2; // 0 to 2PI
+    // Only run day/night logic if enough time has passed (20 ticks/sec)
+    // Limit max steps per frame to prevent hanging
+    let steps = 0;
+    while (dayNightAccumulator >= DAY_NIGHT_STEP && steps < 5) {
+      gameTime += (DAY_NIGHT_STEP / 1000); // Add fixed step in seconds
+      if (gameTime > DAY_DURATION) gameTime -= DAY_DURATION;
+      dayNightAccumulator -= DAY_NIGHT_STEP;
+      steps++;
+    }
+    currentGameTime = gameTime;
+  }
+  
+  // Calculate time progress and sun position from current game time
+  const timeProgress = currentGameTime / DAY_DURATION;
+  const angle = timeProgress * Math.PI * 2; // 0 to 2PI
 
-    // Sun rotates around Z axis (rises in X+, sets in X-)
-    // Noon: Y+, Sunrise: X+, Sunset: X-, Midnight: Y-
-    const sunX = Math.cos(angle);
-    const sunY = Math.sin(angle);
-    const sunZ = Math.sin(angle * 0.5) * 0.2; // Slight wobble
+  // Sun rotates around Z axis (rises in X+, sets in X-)
+  // Noon: Y+, Sunrise: X+, Sunset: X-, Midnight: Y-
+  const sunX = Math.cos(angle);
+  const sunY = Math.sin(angle);
+  const sunZ = Math.sin(angle * 0.5) * 0.2; // Slight wobble
 
-    // Only update lighting if sun position changed significantly
-    if (Math.abs(sunY - lastSunY) > UPDATE_THRESHOLD) {
-      lastSunY = sunY;
+  // Only update lighting if sun position changed significantly
+  if (Math.abs(sunY - lastSunY) > UPDATE_THRESHOLD) {
+    lastSunY = sunY;
 
-      // Determine Cycle Phase
-      let currentTimePhase;
+    // Determine Cycle Phase
+    let currentTimePhase;
+    if (sunY > 0.2) {
+        currentTimePhase = 0; // Day
+    } else if (sunY > -0.2) {
+        currentTimePhase = 1; // Sunrise/Sunset
+    } else {
+        currentTimePhase = 2; // Night
+    }
+
+    // Only update scene properties if phase changed or first time
+    if (currentTimePhase !== lastTimePhase || lastTimePhase === -1) {
+      lastTimePhase = currentTimePhase;
+
       if (sunY > 0.2) {
-          currentTimePhase = 0; // Day
+          // Day
+          scene.background.copy(SKY_COLOR_DAY);
+          scene.fog.color.copy(SKY_COLOR_DAY);
+          dirLight.color.setHex(0xffffff);
+          dirLight.intensity = 1.0;
+          hemiLight.intensity = 0.6;
       } else if (sunY > -0.2) {
-          currentTimePhase = 1; // Sunrise/Sunset
+          // Sunrise/Sunset
+          const t = (sunY + 0.2) / 0.4; // Normalized 0 to 1 for transition zone
+
+          if (sunY > 0) {
+              // Day <-> Sunset
+              const mix = sunY / 0.2; // 1 (Day) to 0 (Sunset)
+              scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
+              scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
+              dirLight.intensity = 0.5 + 0.5 * mix;
+              dirLight.color.setHex(0xffdcb5); // Orange tint
+          } else {
+              // Sunset <-> Night
+              const mix = (sunY + 0.2) / 0.2; // 1 (Sunset) to 0 (Night)
+              scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
+              scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
+              dirLight.intensity = 0.5 * mix; // Fade out
+              dirLight.color.setHex(0xffdcb5);
+          }
+          hemiLight.intensity = 0.2 + 0.4 * t;
       } else {
-          currentTimePhase = 2; // Night
-      }
-
-      // Only update scene properties if phase changed or first time
-      if (currentTimePhase !== lastTimePhase || lastTimePhase === -1) {
-        lastTimePhase = currentTimePhase;
-
-        if (sunY > 0.2) {
-            // Day
-            scene.background.copy(SKY_COLOR_DAY);
-            scene.fog.color.copy(SKY_COLOR_DAY);
-            dirLight.color.setHex(0xffffff);
-            dirLight.intensity = 1.0;
-            hemiLight.intensity = 0.6;
-        } else if (sunY > -0.2) {
-            // Sunrise/Sunset
-            const t = (sunY + 0.2) / 0.4; // Normalized 0 to 1 for transition zone
-
-            if (sunY > 0) {
-                // Day <-> Sunset
-                const mix = sunY / 0.2; // 1 (Day) to 0 (Sunset)
-                scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-                scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-                dirLight.intensity = 0.5 + 0.5 * mix;
-                dirLight.color.setHex(0xffdcb5); // Orange tint
-            } else {
-                // Sunset <-> Night
-                const mix = (sunY + 0.2) / 0.2; // 1 (Sunset) to 0 (Night)
-                scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-                scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-                dirLight.intensity = 0.5 * mix; // Fade out
-                dirLight.color.setHex(0xffdcb5);
-            }
-            hemiLight.intensity = 0.2 + 0.4 * t;
-        } else {
-            // Night
-            scene.background.copy(SKY_COLOR_NIGHT);
-            scene.fog.color.copy(SKY_COLOR_NIGHT);
-            dirLight.intensity = 0; // No sun at night
-            hemiLight.intensity = 0.1; // Dark
-        }
+          // Night
+          scene.background.copy(SKY_COLOR_NIGHT);
+          scene.fog.color.copy(SKY_COLOR_NIGHT);
+          dirLight.intensity = 0; // No sun at night
+          hemiLight.intensity = 0.1; // Dark
       }
     }
+  }
 
-    // Update Light Position (relative to player) - only when angle changes significantly
-    if (Math.abs(angle - lastSunAngle) > ANGLE_THRESHOLD) {
-      lastSunAngle = angle;
-      sunOffset.set(sunX, sunY, sunZ).normalize().multiplyScalar(100);
-    }
+  // Update Light Position (relative to player) - only when angle changes significantly
+  if (Math.abs(angle - lastSunAngle) > ANGLE_THRESHOLD) {
+    lastSunAngle = angle;
+    sunOffset.set(sunX, sunY, sunZ).normalize().multiplyScalar(100);
   }
 
   const dayNightEnd = performance.now();
