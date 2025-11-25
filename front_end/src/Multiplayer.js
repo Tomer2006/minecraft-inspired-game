@@ -19,9 +19,8 @@ export class Multiplayer {
     }
 
     connect() {
-        // Configuration: Set this to your Render backend URL
-        // Replace with your actual Render URL after deployment
-        const PRODUCTION_BACKEND_URL = 'wss://your-render-app.onrender.com'; 
+        // Configuration: Your Render backend URL
+        const PRODUCTION_BACKEND_URL = 'wss://minecraft-inspired-game.onrender.com'; 
 
         let socketUrl;
         
