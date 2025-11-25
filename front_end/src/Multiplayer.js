@@ -21,7 +21,7 @@ export class Multiplayer {
     connect() {
         // Configuration: Set this to your local backend tunnel URL
         // This URL exposes your local backend to the internet via localtunnel
-        const PRODUCTION_BACKEND_URL = 'wss://shiny-teeth-cross.loca.lt'; 
+        const PRODUCTION_BACKEND_URL = 'wss://your-railway-app.railway.app'; 
 
         let socketUrl;
         
