@@ -101,7 +101,10 @@ export class Multiplayer {
 
                 // Initialize existing players
                 if (data.players) {
-                    for (const p of data.players) {
+                    // Check if it's array (old format/init) or object (new update format)
+                    // Init usually sends array
+                    const playersList = Array.isArray(data.players) ? data.players : Object.values(data.players);
+                    for (const p of playersList) {
                         if (p.id !== this.id) {
                             this.addPlayer(p.id, p);
                         }
@@ -126,12 +129,7 @@ export class Multiplayer {
                 break;
             case 'block-update':
                 // Apply remote block update
-                // We pass "true" as the last argument to indicate it's a remote update
-                // This prevents the main.js hook from sending it back to the server
-                // Check if the setBlock method accepts the extra argument (it does implicitly in JS)
-                // The hook in main.js will check the 5th argument.
                 if (this.localPlayer.terrain) {
-                    // terrain.setBlock(x, y, z, blockName, isRemote)
                     this.localPlayer.terrain.setBlock(data.x, data.y, data.z, data.blockName, true);
                 }
                 break;
@@ -167,15 +165,23 @@ export class Multiplayer {
         
         this.remotePlayers[id] = {
             mesh: mesh,
-            targetPosition: data.position ? new THREE.Vector3(data.position.x, data.position.y, data.position.z) : new THREE.Vector3(),
-            rotation: data.rotation || { x: 0, y: 0 }
+            rotation: data.rotation || { x: 0, y: 0 },
+            positionBuffer: [] // Buffer for interpolation
         };
+
+        // Initialize buffer
+        if (data.position) {
+            this.remotePlayers[id].positionBuffer.push({
+                timestamp: Date.now(),
+                position: data.position,
+                rotation: data.rotation || { x: 0, y: 0 }
+            });
+        }
     }
 
     removePlayer(id) {
         if (this.remotePlayers[id]) {
             this.scene.remove(this.remotePlayers[id].mesh);
-            // Dispose geometry/material to avoid leaks
             this.remotePlayers[id].mesh.geometry.dispose();
             this.remotePlayers[id].mesh.material.dispose();
             delete this.remotePlayers[id];
@@ -183,6 +189,7 @@ export class Multiplayer {
     }
 
     updatePlayers(playersData) {
+        const now = Date.now();
         for (const id in playersData) {
             if (id === this.id) continue;
 
@@ -190,15 +197,18 @@ export class Multiplayer {
                 this.addPlayer(id, playersData[id]);
             } else {
                 const p = this.remotePlayers[id];
+                // Add to buffer
                 if (playersData[id].position) {
-                    p.targetPosition.set(
-                        playersData[id].position.x,
-                        playersData[id].position.y,
-                        playersData[id].position.z
-                    );
-                }
-                if (playersData[id].rotation) {
-                    p.rotation = playersData[id].rotation;
+                    p.positionBuffer.push({
+                        timestamp: now,
+                        position: playersData[id].position,
+                        rotation: playersData[id].rotation
+                    });
+                    
+                    // Keep buffer size manageable
+                    while (p.positionBuffer.length > 20) {
+                        p.positionBuffer.shift();
+                    }
                 }
             }
         }
@@ -217,19 +227,68 @@ export class Multiplayer {
         }
 
         // Interpolate remote players
+        const renderTimestamp = Date.now() - 100; // 100ms delay for smooth interpolation
+
         for (const id in this.remotePlayers) {
             const p = this.remotePlayers[id];
+            const buffer = p.positionBuffer;
             
-            // Determine where the mesh should be visually (offset from head position)
-            const targetBodyPos = p.targetPosition.clone();
-            targetBodyPos.y -= 0.78; 
+            if (buffer.length < 1) continue;
 
-            // Smoothly move mesh
-            p.mesh.position.lerp(targetBodyPos, 10 * delta);
+            // Find the two frames surrounding renderTimestamp
+            let p1 = buffer[0];
+            let p2 = buffer[0];
             
-            // Update rotation (only Y is visible on body usually)
-            // We don't smooth rotation here for simplicity, but could
-            p.mesh.rotation.y = p.rotation.y;
+            // Attempt to find the interval
+            // If we have future data, find the interpolation spot
+            if (buffer.length >= 2 && buffer[buffer.length - 1].timestamp >= renderTimestamp) {
+                 for (let i = 0; i < buffer.length - 1; i++) {
+                    if (buffer[i].timestamp <= renderTimestamp && buffer[i+1].timestamp >= renderTimestamp) {
+                        p1 = buffer[i];
+                        p2 = buffer[i+1];
+                        break;
+                    }
+                 }
+            } else {
+                // We are lagging behind server updates or packet loss
+                // Use the latest data
+                p1 = buffer[buffer.length - 1];
+                p2 = p1;
+            }
+
+            let targetPos = new THREE.Vector3();
+            let targetRotY = 0;
+
+            if (p1 === p2) {
+                targetPos.set(p1.position.x, p1.position.y, p1.position.z);
+                targetRotY = p1.rotation ? p1.rotation.y : 0;
+            } else {
+                const total = p2.timestamp - p1.timestamp;
+                const current = renderTimestamp - p1.timestamp;
+                const t = total > 0 ? current / total : 0;
+
+                targetPos.set(p1.position.x, p1.position.y, p1.position.z);
+                const pos2 = new THREE.Vector3(p2.position.x, p2.position.y, p2.position.z);
+                targetPos.lerp(pos2, t);
+
+                // Interpolate rotation (linear)
+                const r1 = p1.rotation ? p1.rotation.y : 0;
+                const r2 = p2.rotation ? p2.rotation.y : 0;
+                
+                // Shortest path angle interpolation
+                let diff = r2 - r1;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                
+                targetRotY = r1 + diff * t;
+            }
+            
+            // Apply offset (visual mesh is offset from head position)
+            targetPos.y -= 0.78;
+
+            // Update mesh
+            p.mesh.position.copy(targetPos);
+            p.mesh.rotation.y = targetRotY;
         }
     }
 }

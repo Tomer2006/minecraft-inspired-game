@@ -97,18 +97,17 @@ process.on('SIGINT', () => {
 
 
 const server = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
-    if (filePath === './') {
-        filePath = './index.html';
-    }
-
+    // Serve files from front_end directory
+    let filePath = path.join(__dirname, '..', 'front_end', req.url === '/' ? 'index.html' : req.url);
+    
     const extname = String(path.extname(filePath)).toLowerCase();
     const contentType = MIME_TYPES[extname] || 'application/octet-stream';
 
     fs.readFile(filePath, (error, content) => {
         if (error) {
             if(error.code == 'ENOENT') {
-                fs.readFile('./404.html', (error, content) => {
+                const notFoundPath = path.join(__dirname, '..', 'front_end', '404.html');
+                fs.readFile(notFoundPath, (error, content) => {
                     res.writeHead(404, { 'Content-Type': 'text/html' });
                     res.end(content || '404 Not Found', 'utf-8');
                 });
@@ -271,14 +270,21 @@ function broadcast(data, excludeWs) {
 
 // Dedicated Server Tick: Broadcast World State
 setInterval(() => {
+    // Only send necessary data (positions)
+    const playerUpdates = {};
+    for (const [pid, pData] of Object.entries(activePlayers)) {
+        playerUpdates[pid] = {
+            id: pData.id,
+            position: pData.position,
+            rotation: pData.rotation
+        };
+    }
+    
     const snapshot = {
         type: 'state-update',
-        players: activePlayers,
+        players: playerUpdates,
         timestamp: Date.now()
     };
-    
-    // Only send necessary data (positions)
-    // To optimize, we could just send arrays, but object is fine for now
     
     wss.clients.forEach((client) => {
         if (client.readyState === 1) {

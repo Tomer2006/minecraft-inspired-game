@@ -59,25 +59,8 @@ const player = new Player(scene, camera, terrain, renderer);
 // Multiplayer
 let multiplayer = null;
 
-// Check if running on localhost (local development)
-const isLocalhost = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1' ||
-                    window.location.hostname === '';
-
-// Hide/disable Online button on localhost
-if (isLocalhost) {
-    DOMElements.btnMultiplayer.style.display = 'none';
-}
-
-// Handle Multiplayer Button (only works in production)
+// Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', () => {
-    // Only allow Online mode in production (not localhost)
-    if (isLocalhost) {
-        console.warn('Online multiplayer is only available on the main server (Netlify). Use Singleplayer for local testing.');
-        alert('Online multiplayer is only available on the main server.\n\nPlease visit the deployed version on Netlify to use Online mode.');
-        return;
-    }
-    
     // Set Shared Seed for consistent world
     terrain.setSeed("multiplayer-shared-world-v1");
     
