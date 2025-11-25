@@ -42,6 +42,27 @@ dirLight.shadow.camera.bottom = -d;
 scene.add(dirLight);
 scene.add(dirLight.target); // Needed to move target
 
+// Sun and Moon (Celestial Bodies)
+const sunGeometry = new THREE.SphereGeometry(8, 16, 16);
+const sunMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    emissive: 0xffaa00,
+    emissiveIntensity: 0.3
+});
+const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+sunMesh.position.set(0, 100, 0); // Initial position
+scene.add(sunMesh);
+
+const moonGeometry = new THREE.SphereGeometry(6, 16, 16);
+const moonMaterial = new THREE.MeshBasicMaterial({
+    color: 0xcccccc,
+    emissive: 0x444444,
+    emissiveIntensity: 0.1
+});
+const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+moonMesh.position.set(0, -100, 0); // Initial position (opposite side)
+scene.add(moonMesh);
+
 // Terrain
 const terrain = new Terrain({
   renderDistance: 5, // Radius in chunks
@@ -293,6 +314,26 @@ function animate() {
   if (Math.abs(angle - lastSunAngle) > ANGLE_THRESHOLD) {
     lastSunAngle = angle;
     sunOffset.set(sunX, sunY, sunZ).normalize().multiplyScalar(100);
+
+    // Update Sun position (follows the sun light)
+    sunMesh.position.copy(camera.position).add(sunOffset.clone().multiplyScalar(0.8));
+
+    // Update Moon position (opposite to sun)
+    const moonAngle = angle + Math.PI; // 180 degrees opposite
+    const moonX = Math.cos(moonAngle);
+    const moonY = Math.sin(moonAngle);
+    const moonZ = Math.sin(moonAngle * 0.5) * 0.2;
+    const moonOffset = new THREE.Vector3(moonX, moonY, moonZ).normalize().multiplyScalar(100);
+    moonMesh.position.copy(camera.position).add(moonOffset);
+
+    // Show/hide based on time of day
+    if (sunY > -0.1) { // Show sun during day/dawn
+        sunMesh.visible = true;
+        moonMesh.visible = false;
+    } else { // Show moon during night/dusk
+        sunMesh.visible = false;
+        moonMesh.visible = true;
+    }
   }
 
   const dayNightEnd = performance.now();
