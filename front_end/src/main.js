@@ -80,6 +80,14 @@ const player = new Player(scene, camera, terrain, renderer);
 // Multiplayer
 let multiplayer = null;
 
+// Handle Multiplayer Button
+DOMElements.btnMultiplayer.addEventListener('click', async () => {
+    // Show username input modal
+    DOMElements.usernameModal.style.display = 'grid';
+    DOMElements.inpUsername.focus();
+    DOMElements.inpUsername.select();
+});
+
 // Handle Join Multiplayer Button
 DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
     // Get username from input (optional, cosmetic only)
