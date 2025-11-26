@@ -34,8 +34,6 @@ export const DOMElements = {
     get usernameModal() { return get('username-modal'); },
 
     // Buttons
-    get btnPlay() { return get('btn-play'); },
-    get btnMultiplayer() { return get('btn-multiplayer'); },
     get btnResume() { return get('btn-resume'); },
     get btnOptions() { return get('btn-options'); },
     get btnOptionsIngame() { return get('btn-options-ingame'); },

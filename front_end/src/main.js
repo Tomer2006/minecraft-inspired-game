@@ -80,14 +80,6 @@ const player = new Player(scene, camera, terrain, renderer);
 // Multiplayer
 let multiplayer = null;
 
-// Handle Multiplayer Button
-DOMElements.btnMultiplayer.addEventListener('click', async () => {
-    // Show username input modal
-    DOMElements.usernameModal.style.display = 'grid';
-    DOMElements.inpUsername.focus();
-    DOMElements.inpUsername.select();
-});
-
 // Handle Join Multiplayer Button
 DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
     // Get username from input (optional, cosmetic only)
@@ -133,9 +125,6 @@ DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
     // Lock controls to start game
     player.controls.lock();
     DOMElements.menuMain.style.display = 'none';
-
-    // Show Resume button for multiplayer
-    DOMElements.btnResume.style.display = 'block';
 });
 
 // Handle Cancel Username Button
@@ -165,9 +154,6 @@ DOMElements.btnBackMain.addEventListener('click', () => {
         // Actually, if we disconnect, we might want to reset the object to ensure fresh state
         multiplayer = null;
         window.multiplayer = null;
-        
-        // Hide Resume button when disconnecting from multiplayer
-        DOMElements.btnResume.style.display = 'none';
     }
 });
 

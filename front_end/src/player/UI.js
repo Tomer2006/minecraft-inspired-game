@@ -16,7 +16,6 @@ export class PlayerUI {
     const menuOptions = DOMElements.menuOptions;
 
     // Buttons
-    const btnPlay = DOMElements.btnPlay;
     const btnResume = DOMElements.btnResume;
     const btnContinue = DOMElements.btnContinue;
     const btnOptions = DOMElements.btnOptions;
@@ -276,12 +275,6 @@ export class PlayerUI {
     }
 
     // Navigation
-    btnPlay.addEventListener('click', () => {
-      menuMain.style.display = 'none';
-      menuPlay.style.display = 'flex';
-      this.renderWorldList(worldListContainer);
-    });
-
     if (btnContinue) {
       btnContinue.addEventListener('click', () => {
         this.player.controls.lock();
