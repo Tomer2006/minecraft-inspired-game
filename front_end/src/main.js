@@ -168,11 +168,11 @@ const SKY_COLOR_SUNSET = new THREE.Color(0xfd5e53);
 let lastTimePhase = -1; // 0: day, 1: sunset, 2: night
 let lastSunY = 0;
 let lastSunAngle = 0;
-const UPDATE_THRESHOLD = 0.02; // Only update if sunY changes by this much (increased for better performance)
-const ANGLE_THRESHOLD = 0.05; // Only update sun position if angle changes significantly
+const UPDATE_THRESHOLD = 0.005; // More frequent updates for smoother transitions
+const ANGLE_THRESHOLD = 0.01; // More frequent sun position updates
 
-// Fixed Time Step for Day/Night Cycle
-const DAY_NIGHT_TICK_RATE = 20; // Update 20 times per second (every 50ms)
+// Fixed Time Step for Day/Night Cycle - Increased frequency
+const DAY_NIGHT_TICK_RATE = 60; // Update 60 times per second (every ~16.7ms)
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
