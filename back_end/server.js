@@ -173,7 +173,8 @@ wss.on('connection', (ws) => {
                     // Initialize new player record
                     playerData[id] = {
                         position: { x: 0, y: 20, z: 0 },
-                        rotation: { x: 0, y: 0 }
+                        rotation: { x: 0, y: 0 },
+                        inventory: null // Will be set when client sends initial data
                     };
                 }
 
@@ -190,15 +191,16 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({
                     type: 'init',
                     id: id,
-                    position: { 
-                        x: playerData[id].position.x, 
-                        y: playerData[id].position.y, 
-                        z: playerData[id].position.z 
+                    position: {
+                        x: playerData[id].position.x,
+                        y: playerData[id].position.y,
+                        z: playerData[id].position.z
                     },
-                    rotation: { 
-                        x: playerData[id].rotation.x, 
-                        y: playerData[id].rotation.y 
+                    rotation: {
+                        x: playerData[id].rotation.x,
+                        y: playerData[id].rotation.y
                     },
+                    inventory: playerData[id].inventory,
                     players: Object.values(activePlayers).map(p => ({
                         id: p.id,
                         username: p.username,
@@ -266,6 +268,11 @@ wss.on('connection', (ws) => {
                         id: id,
                         username: activePlayers[id].username
                     }, ws);
+                }
+            } else if (data.type === 'inventory-update') {
+                // Handle inventory update from client
+                if (id && playerData[id] && data.inventory) {
+                    playerData[id].inventory = data.inventory;
                 }
             } else if (data.type === 'block-update') {
                 // Handle Block Modification (including air/removal)

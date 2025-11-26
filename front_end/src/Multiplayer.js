@@ -9,6 +9,8 @@ export class Multiplayer {
         this.ws = null;
         this.id = null;
         this.lastUpdate = 0;
+        this.lastInventoryUpdate = 0;
+        this.previousInventoryState = null;
         this.isConnected = false;
 
         // Add key listener for changing username (N key)
@@ -128,13 +130,31 @@ export class Multiplayer {
                     console.log('Received initial world state');
                     this.localPlayer.terrain.loadModifiedBlocks(data.world);
                 }
-                
+
                 // Initialize synchronized game time
                 if (typeof data.gameTime === 'number') {
                     this.serverGameTime = data.gameTime;
                     this.lastServerTimeUpdate = Date.now();
                     this.useServerTime = true;
                     console.log('Synchronized to server time:', this.serverGameTime);
+                }
+
+                // Load saved inventory if available, otherwise send current inventory to server
+                if (data.inventory && this.localPlayer.inventory) {
+                    console.log('Loading saved inventory:', data.inventory);
+                    this.localPlayer.inventory.slots = data.inventory;
+                    this.localPlayer.inventory.updateUI();
+                } else if (this.localPlayer.inventory) {
+                    // No saved inventory, send current inventory to server for saving
+                    console.log('Sending initial inventory to server');
+                    setTimeout(() => {
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({
+                                type: 'inventory-update',
+                                inventory: this.localPlayer.inventory.slots
+                            }));
+                        }
+                    }, 1000); // Small delay to ensure connection is stable
                 }
                 break;
             case 'player-joined':
@@ -312,6 +332,23 @@ export class Multiplayer {
                 rotation: { x: this.localPlayer.head.rotation.x, y: this.localPlayer.head.rotation.y }
             }));
             this.lastUpdate = now;
+        }
+
+        // Send inventory update to server (every 5 seconds or when changed)
+        if (now - this.lastInventoryUpdate > 5000 && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            if (this.localPlayer.inventory) {
+                const currentInventoryState = JSON.stringify(this.localPlayer.inventory.slots);
+
+                // Only send if inventory actually changed
+                if (this.previousInventoryState !== currentInventoryState) {
+                    this.ws.send(JSON.stringify({
+                        type: 'inventory-update',
+                        inventory: this.localPlayer.inventory.slots
+                    }));
+                    this.previousInventoryState = currentInventoryState;
+                }
+            }
+            this.lastInventoryUpdate = now;
         }
 
         // Interpolate remote players
