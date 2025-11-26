@@ -194,15 +194,20 @@ const SKY_COLOR_DAY = new THREE.Color(0x87CEEB);
 const SKY_COLOR_NIGHT = new THREE.Color(0x050510);
 const SKY_COLOR_SUNSET = new THREE.Color(0xfd5e53);
 
-// Cache for performance - avoid updating every frame
+// Performance optimization: Separate update frequencies for different components
 let lastTimePhase = -1; // 0: day, 1: sunset, 2: night
 let lastSunY = 0;
 let lastSunAngle = 0;
-const UPDATE_THRESHOLD = 0.001; // Even more frequent updates for smoother transitions
-const ANGLE_THRESHOLD = 0.005; // More frequent sun position updates
+let lastSunVisible = true; // Cache sun/moon visibility to avoid redundant updates
 
-// Fixed Time Step for Day/Night Cycle - High frequency for smooth transitions
-const DAY_NIGHT_TICK_RATE = 120; // Update 120 times per second (every ~8.3ms)
+// Reduced update frequencies for better performance
+const LIGHTING_UPDATE_THRESHOLD = 0.01; // Less frequent lighting updates (was 0.001)
+const POSITION_UPDATE_THRESHOLD = 0.02; // Less frequent position updates (was 0.005)
+const LIGHTING_UPDATE_INTERVAL = 100; // Update lighting every 100ms max
+let lastLightingUpdate = 0;
+
+// Fixed Time Step for Day/Night Cycle - Reduced frequency for performance
+const DAY_NIGHT_TICK_RATE = 60; // Update 60 times per second (was 120, every ~16.7ms)
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
@@ -285,11 +290,41 @@ function animate() {
   const sunY = Math.sin(angle);
   const sunZ = Math.sin(angle * 0.5) * 0.2; // Slight wobble
 
-  // Update lighting continuously for smoother transitions
-  if (Math.abs(sunY - lastSunY) > UPDATE_THRESHOLD) {
-    lastSunY = sunY;
+  // Performance optimization: Update celestial positions more frequently than lighting
+  if (Math.abs(angle - lastSunAngle) > POSITION_UPDATE_THRESHOLD) {
+    lastSunAngle = angle;
+    sunOffset.set(sunX, sunY, sunZ).normalize().multiplyScalar(100);
 
-    // Always update sky and lighting based on continuous sun position
+    // Update Sun position (follows the sun light)
+    sunMesh.position.copy(camera.position).add(sunOffset.clone().multiplyScalar(0.8));
+
+    // Update Moon position (opposite to sun)
+    const moonAngle = angle + Math.PI; // 180 degrees opposite
+    const moonX = Math.cos(moonAngle);
+    const moonY = Math.sin(moonAngle);
+    const moonZ = Math.sin(moonAngle * 0.5) * 0.2;
+    const moonOffset = new THREE.Vector3(moonX, moonY, moonZ).normalize().multiplyScalar(100);
+    moonMesh.position.copy(camera.position).add(moonOffset);
+
+    // Show/hide based on time of day (only update when state changes)
+    const shouldShowSun = sunY > -0.1;
+    if (shouldShowSun !== lastSunVisible) {
+        lastSunVisible = shouldShowSun;
+        sunMesh.visible = shouldShowSun;
+        moonMesh.visible = !shouldShowSun;
+    }
+  }
+
+  // Performance optimization: Update lighting less frequently using time-based intervals
+  const currentTime = performance.now();
+  const needsLightingUpdate = (Math.abs(sunY - lastSunY) > LIGHTING_UPDATE_THRESHOLD) ||
+                              (currentTime - lastLightingUpdate > LIGHTING_UPDATE_INTERVAL);
+
+  if (needsLightingUpdate) {
+    lastSunY = sunY;
+    lastLightingUpdate = currentTime;
+
+    // Update sky and lighting based on sun position
     if (sunY > 0.2) {
         // Day - pure daylight
         scene.background.copy(SKY_COLOR_DAY);
@@ -323,32 +358,6 @@ function animate() {
         scene.fog.color.copy(SKY_COLOR_NIGHT);
         dirLight.intensity = 0.0; // No direct sunlight at night
         hemiLight.intensity = 0.1; // Minimal ambient light
-    }
-  }
-
-  // Update Light Position (relative to player) - only when angle changes significantly
-  if (Math.abs(angle - lastSunAngle) > ANGLE_THRESHOLD) {
-    lastSunAngle = angle;
-    sunOffset.set(sunX, sunY, sunZ).normalize().multiplyScalar(100);
-
-    // Update Sun position (follows the sun light)
-    sunMesh.position.copy(camera.position).add(sunOffset.clone().multiplyScalar(0.8));
-
-    // Update Moon position (opposite to sun)
-    const moonAngle = angle + Math.PI; // 180 degrees opposite
-    const moonX = Math.cos(moonAngle);
-    const moonY = Math.sin(moonAngle);
-    const moonZ = Math.sin(moonAngle * 0.5) * 0.2;
-    const moonOffset = new THREE.Vector3(moonX, moonY, moonZ).normalize().multiplyScalar(100);
-    moonMesh.position.copy(camera.position).add(moonOffset);
-
-    // Show/hide based on time of day
-    if (sunY > -0.1) { // Show sun during day/dawn
-        sunMesh.visible = true;
-        moonMesh.visible = false;
-    } else { // Show moon during night/dusk
-        sunMesh.visible = false;
-        moonMesh.visible = true;
     }
   }
 

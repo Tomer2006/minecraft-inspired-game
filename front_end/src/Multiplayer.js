@@ -46,11 +46,6 @@ export class Multiplayer {
         this.ws.onopen = () => {
             console.log('Connected to multiplayer server');
             this.isConnected = true;
-
-            // Hide the Online button when connected
-            if (DOMElements.btnMultiplayer) {
-                DOMElements.btnMultiplayer.style.display = 'none';
-            }
             
             // Try to restore previous session ID
             const savedId = localStorage.getItem('multiplayer_id');
