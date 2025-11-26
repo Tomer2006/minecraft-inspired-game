@@ -82,18 +82,29 @@ let multiplayer = null;
 
 // Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', async () => {
-    // Ask for username (optional, cosmetic only)
-    const username = prompt('Enter your display name (optional):', 'Player' + Math.floor(Math.random() * 1000));
+    // Show username input modal
+    DOMElements.usernameModal.style.display = 'grid';
+    DOMElements.inpUsername.focus();
+    DOMElements.inpUsername.select();
+});
 
-    // Username is purely cosmetic - no validation required
-    const displayName = username ? username.trim().substring(0, 20) : 'Player' + Math.floor(Math.random() * 1000);
+// Handle Join Multiplayer Button
+DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
+    // Get username from input (optional, cosmetic only)
+    const username = DOMElements.inpUsername.value.trim();
+    const displayName = username ? username.substring(0, 20) : 'Player' + Math.floor(Math.random() * 1000);
+
+    // Hide modal
+    DOMElements.usernameModal.style.display = 'none';
+
+    // Continue with multiplayer initialization
 
     // Set Shared Seed for consistent world
     terrain.setSeed("multiplayer-shared-world-v1");
 
     // Initialize Multiplayer with username
     if (!multiplayer) {
-        multiplayer = new Multiplayer(scene, player, trimmedUsername);
+        multiplayer = new Multiplayer(scene, player, displayName);
         
         // Hook into Terrain.setBlock to send updates
         // We wrap the original setBlock method
@@ -122,9 +133,28 @@ DOMElements.btnMultiplayer.addEventListener('click', async () => {
     // Lock controls to start game
     player.controls.lock();
     DOMElements.menuMain.style.display = 'none';
-    
+
     // Show Resume button for multiplayer
     DOMElements.btnResume.style.display = 'block';
+});
+
+// Handle Cancel Username Button
+DOMElements.btnCancelUsername.addEventListener('click', () => {
+    // Hide modal and return to main menu
+    DOMElements.usernameModal.style.display = 'none';
+});
+
+// Handle keyboard input in username modal
+document.addEventListener('keydown', (event) => {
+    if (DOMElements.usernameModal.style.display === 'grid') {
+        if (event.key === 'Enter') {
+            // Simulate clicking join button
+            DOMElements.btnJoinMultiplayer.click();
+        } else if (event.key === 'Escape') {
+            // Simulate clicking cancel button
+            DOMElements.btnCancelUsername.click();
+        }
+    }
 });
 
 // Handle Back Button (Disconnect Multiplayer)

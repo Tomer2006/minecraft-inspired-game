@@ -30,6 +30,7 @@ export const DOMElements = {
     get menuOptions() { return get('menu-options'); },
     get menuCreate() { return get('menu-create'); },
     get menuRename() { return get('menu-rename'); },
+    get usernameModal() { return get('username-modal'); },
 
     // Buttons
     get btnPlay() { return get('btn-play'); },
@@ -45,10 +46,13 @@ export const DOMElements = {
     get btnConfirmRename() { return get('btn-confirm-rename'); },
     get btnBackRename() { return get('btn-back-rename'); },
     get btnResetKeybinds() { return get('btn-reset-keybinds'); },
+    get btnJoinMultiplayer() { return get('btn-join-multiplayer'); },
+    get btnCancelUsername() { return get('btn-cancel-username'); },
 
     // Inputs
     get inpWorldName() { return get('inp-world-name'); },
     get inpRenameWorld() { return get('inp-rename-world'); },
+    get inpUsername() { return get('inp-username'); },
     get inpRenderDist() { return get('opt-render-dist'); },
     get inpSensitivity() { return get('opt-sensitivity'); },
     get inpMaxFps() { return get('opt-max-fps'); },

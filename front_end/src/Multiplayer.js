@@ -401,19 +401,9 @@ export class Multiplayer {
         return currentTime;
     }
 
-    // Change username (cosmetic only)
+    // Change username (cosmetic only) - disabled for now since we don't have an in-game UI for this
     changeUsername() {
-        const newUsername = prompt('Enter new display name:', this.username);
-        if (newUsername !== null) { // Allow empty strings
-            this.username = newUsername.trim().substring(0, 20) || 'Player' + Math.floor(Math.random() * 1000);
-
-            // Send username update to server
-            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                this.ws.send(JSON.stringify({
-                    type: 'username-change',
-                    username: this.username
-                }));
-            }
-        }
+        // For now, just show a message. Could add an in-game UI later
+        console.log('Username changing is not available in-game yet. Join with a different name instead.');
     }
 }
