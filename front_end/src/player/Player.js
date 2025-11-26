@@ -5,6 +5,7 @@ import { PlayerControls } from './Controls.js';
 import { PlayerPhysics } from './Physics.js';
 import { PlayerInteraction } from './Interaction.js';
 import { PlayerUI } from './UI.js';
+import { MainMenuUI } from '../MainMenuUI.js';
 import { WorldHandler } from './WorldHandler.js';
 
 export class Player {
@@ -52,6 +53,7 @@ export class Player {
     this.controlsHandler = new PlayerControls(this); // "controls" property will be the actual controls object
     this.interaction = new PlayerInteraction(this);
     this.ui = new PlayerUI(this);
+    this.mainMenuUI = new MainMenuUI(this);
     this.worldHandler = new PlayerWorldHandler(this); // Wait, I named the class WorldHandler
 
     // Camera Mode State
@@ -94,7 +96,8 @@ export class Player {
     
     this.controlsHandler.setupInputs();
     this.interaction.setupInteraction();
-    this.ui.setupOverlay();
+    this.mainMenuUI.setupOverlay();
+    this.ui.setupInGameUI();
   }
 
   cycleCameraMode() {
