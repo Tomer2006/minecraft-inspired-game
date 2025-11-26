@@ -308,21 +308,29 @@ export class PlayerUI {
 
     if (btnMainMenu) {
       btnMainMenu.addEventListener('click', () => {
-        // Disconnect from multiplayer and return to main menu
-        if (window.multiplayer) {
-          window.multiplayer.disconnect();
-          window.multiplayer = null;
-        }
+        // Confirm exit
+        if (confirm('Are you sure you want to exit the game?')) {
+          // Disconnect from multiplayer
+          if (window.multiplayer) {
+            window.multiplayer.disconnect();
+            window.multiplayer = null;
+          }
 
-        // Clear current world
-        if (this.player.worldHandler.currentWorldId) {
-          this.player.worldHandler.unloadWorld();
-        }
+          // Clear current world
+          if (this.player.worldHandler.currentWorldId) {
+            this.player.worldHandler.unloadWorld();
+          }
 
-        // Return to start screen
-        menuIngame.style.display = 'none';
-        menuMain.style.display = 'flex';
-        overlay.style.display = 'grid';
+          // Exit the game by closing the window/tab
+          window.close();
+
+          // Fallback: if window.close() doesn't work (some browsers block it),
+          // navigate to a blank page or show exit message
+          setTimeout(() => {
+            // If we're still here, window.close() was blocked
+            document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 24px; font-family: Arial, sans-serif;">Game exited. You can close this tab.</div>';
+          }, 100);
+        }
       });
     }
 
