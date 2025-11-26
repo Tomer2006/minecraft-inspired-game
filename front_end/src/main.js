@@ -204,11 +204,11 @@ const SKY_COLOR_SUNSET = new THREE.Color(0xfd5e53);
 let lastTimePhase = -1; // 0: day, 1: sunset, 2: night
 let lastSunY = 0;
 let lastSunAngle = 0;
-const UPDATE_THRESHOLD = 0.005; // More frequent updates for smoother transitions
-const ANGLE_THRESHOLD = 0.01; // More frequent sun position updates
+const UPDATE_THRESHOLD = 0.001; // Even more frequent updates for smoother transitions
+const ANGLE_THRESHOLD = 0.005; // More frequent sun position updates
 
-// Fixed Time Step for Day/Night Cycle - Increased frequency
-const DAY_NIGHT_TICK_RATE = 60; // Update 60 times per second (every ~16.7ms)
+// Fixed Time Step for Day/Night Cycle - High frequency for smooth transitions
+const DAY_NIGHT_TICK_RATE = 120; // Update 120 times per second (every ~8.3ms)
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
@@ -291,58 +291,44 @@ function animate() {
   const sunY = Math.sin(angle);
   const sunZ = Math.sin(angle * 0.5) * 0.2; // Slight wobble
 
-  // Only update lighting if sun position changed significantly
+  // Update lighting continuously for smoother transitions
   if (Math.abs(sunY - lastSunY) > UPDATE_THRESHOLD) {
     lastSunY = sunY;
 
-    // Determine Cycle Phase
-    let currentTimePhase;
+    // Always update sky and lighting based on continuous sun position
     if (sunY > 0.2) {
-        currentTimePhase = 0; // Day
+        // Day - pure daylight
+        scene.background.copy(SKY_COLOR_DAY);
+        scene.fog.color.copy(SKY_COLOR_DAY);
+        dirLight.color.setHex(0xffffff);
+        dirLight.intensity = 1.0;
+        hemiLight.intensity = 0.6;
     } else if (sunY > -0.2) {
-        currentTimePhase = 1; // Sunrise/Sunset
+        // Sunrise/Sunset transition zone - smooth interpolation
+        const transitionProgress = (sunY + 0.2) / 0.4; // 0 to 1 across transition zone
+
+        if (sunY > 0) {
+            // Day to Sunset transition
+            const dayToSunsetMix = sunY / 0.2; // 1 at day, 0 at sunset
+            scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, dayToSunsetMix);
+            scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, dayToSunsetMix);
+            dirLight.intensity = 0.5 + 0.5 * dayToSunsetMix;
+            dirLight.color.setHex(0xffdcb5); // Warm orange tint
+        } else {
+            // Sunset to Night transition
+            const sunsetToNightMix = (sunY + 0.2) / 0.2; // 1 at sunset, 0 at night
+            scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, sunsetToNightMix);
+            scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, sunsetToNightMix);
+            dirLight.intensity = 0.5 * sunsetToNightMix;
+            dirLight.color.setHex(0xffdcb5); // Warm tint fading to darkness
+        }
+        hemiLight.intensity = 0.2 + 0.4 * transitionProgress;
     } else {
-        currentTimePhase = 2; // Night
-    }
-
-    // Only update scene properties if phase changed or first time
-    if (currentTimePhase !== lastTimePhase || lastTimePhase === -1) {
-      lastTimePhase = currentTimePhase;
-
-      if (sunY > 0.2) {
-          // Day
-          scene.background.copy(SKY_COLOR_DAY);
-          scene.fog.color.copy(SKY_COLOR_DAY);
-          dirLight.color.setHex(0xffffff);
-          dirLight.intensity = 1.0;
-          hemiLight.intensity = 0.6;
-      } else if (sunY > -0.2) {
-          // Sunrise/Sunset
-          const t = (sunY + 0.2) / 0.4; // Normalized 0 to 1 for transition zone
-
-          if (sunY > 0) {
-              // Day <-> Sunset
-              const mix = sunY / 0.2; // 1 (Day) to 0 (Sunset)
-              scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-              scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-              dirLight.intensity = 0.5 + 0.5 * mix;
-              dirLight.color.setHex(0xffdcb5); // Orange tint
-          } else {
-              // Sunset <-> Night
-              const mix = (sunY + 0.2) / 0.2; // 1 (Sunset) to 0 (Night)
-              scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-              scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-              dirLight.intensity = 0.5 * mix; // Fade out
-              dirLight.color.setHex(0xffdcb5);
-          }
-          hemiLight.intensity = 0.2 + 0.4 * t;
-      } else {
-          // Night
-          scene.background.copy(SKY_COLOR_NIGHT);
-          scene.fog.color.copy(SKY_COLOR_NIGHT);
-          dirLight.intensity = 0; // No sun at night
-          hemiLight.intensity = 0.1; // Dark
-      }
+        // Night - pure darkness
+        scene.background.copy(SKY_COLOR_NIGHT);
+        scene.fog.color.copy(SKY_COLOR_NIGHT);
+        dirLight.intensity = 0.0; // No direct sunlight at night
+        hemiLight.intensity = 0.1; // Minimal ambient light
     }
   }
 

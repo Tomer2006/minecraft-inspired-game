@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DOMElements } from './domElements.js';
 
 export class Multiplayer {
     constructor(scene, player, username) {
@@ -9,16 +10,7 @@ export class Multiplayer {
         this.ws = null;
         this.id = null;
         this.lastUpdate = 0;
-        this.lastInventoryUpdate = 0;
-        this.previousInventoryState = null;
         this.isConnected = false;
-
-        // Add key listener for changing username (N key)
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'n' || event.key === 'N') {
-                this.changeUsername();
-            }
-        });
         
         // Time synchronization
         this.serverGameTime = null; // Server's authoritative game time
@@ -54,6 +46,11 @@ export class Multiplayer {
         this.ws.onopen = () => {
             console.log('Connected to multiplayer server');
             this.isConnected = true;
+
+            // Hide the Online button when connected
+            if (DOMElements.btnMultiplayer) {
+                DOMElements.btnMultiplayer.style.display = 'none';
+            }
             
             // Try to restore previous session ID
             const savedId = localStorage.getItem('multiplayer_id');
@@ -76,11 +73,21 @@ export class Multiplayer {
         this.ws.onclose = () => {
             console.log('Disconnected from server');
             this.isConnected = false;
+
+            // Show the Online button when disconnected
+            if (DOMElements.btnMultiplayer) {
+                DOMElements.btnMultiplayer.style.display = 'block';
+            }
         };
-        
+
         this.ws.onerror = (err) => {
             console.error('Multiplayer WebSocket error:', err);
             this.isConnected = false;
+
+            // Show the Online button on error
+            if (DOMElements.btnMultiplayer) {
+                DOMElements.btnMultiplayer.style.display = 'block';
+            }
         };
     }
 
@@ -90,6 +97,11 @@ export class Multiplayer {
             this.ws = null;
         }
         this.isConnected = false;
+
+        // Show the Online button when manually disconnected
+        if (DOMElements.btnMultiplayer) {
+            DOMElements.btnMultiplayer.style.display = 'block';
+        }
         
         // Remove all remote players
         for (const id in this.remotePlayers) {
@@ -130,31 +142,13 @@ export class Multiplayer {
                     console.log('Received initial world state');
                     this.localPlayer.terrain.loadModifiedBlocks(data.world);
                 }
-
+                
                 // Initialize synchronized game time
                 if (typeof data.gameTime === 'number') {
                     this.serverGameTime = data.gameTime;
                     this.lastServerTimeUpdate = Date.now();
                     this.useServerTime = true;
                     console.log('Synchronized to server time:', this.serverGameTime);
-                }
-
-                // Load saved inventory if available, otherwise send current inventory to server
-                if (data.inventory && this.localPlayer.inventory) {
-                    console.log('Loading saved inventory:', data.inventory);
-                    this.localPlayer.inventory.slots = data.inventory;
-                    this.localPlayer.inventory.updateUI();
-                } else if (this.localPlayer.inventory) {
-                    // No saved inventory, send current inventory to server for saving
-                    console.log('Sending initial inventory to server');
-                    setTimeout(() => {
-                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                            this.ws.send(JSON.stringify({
-                                type: 'inventory-update',
-                                inventory: this.localPlayer.inventory.slots
-                            }));
-                        }
-                    }, 1000); // Small delay to ensure connection is stable
                 }
                 break;
             case 'player-joined':
@@ -172,25 +166,6 @@ export class Multiplayer {
                 if (typeof data.gameTime === 'number') {
                     this.serverGameTime = data.gameTime;
                     this.lastServerTimeUpdate = Date.now();
-                }
-                break;
-            case 'username-update':
-                // Handle username change from another player
-                if (this.remotePlayers[data.id]) {
-                    this.remotePlayers[data.id].username = data.username;
-                    // Update label sprite
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 64;
-                    const context = canvas.getContext('2d');
-                    context.font = 'Bold 20px Arial';
-                    context.fillStyle = 'white';
-                    context.strokeStyle = 'black';
-                    context.lineWidth = 3;
-                    context.strokeText(data.username, 128, 32);
-                    context.fillText(data.username, 128, 32);
-                    this.remotePlayers[data.id].labelSprite.material.map = new THREE.CanvasTexture(canvas);
-                    this.remotePlayers[data.id].labelSprite.material.needsUpdate = true;
                 }
                 break;
             case 'block-update':
@@ -229,29 +204,8 @@ export class Multiplayer {
         
         this.scene.add(mesh);
         
-        // Create username label
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 64;
-        const context = canvas.getContext('2d');
-        context.font = 'Bold 20px Arial';
-        context.fillStyle = 'white';
-        context.strokeStyle = 'black';
-        context.lineWidth = 3;
-        context.strokeText(data.username || 'Player', 128, 32);
-        context.fillText(data.username || 'Player', 128, 32);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const labelMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const labelSprite = new THREE.Sprite(labelMaterial);
-        labelSprite.position.set(0, 2.5, 0); // Above player head
-        labelSprite.scale.set(2, 0.5, 1);
-        mesh.add(labelSprite);
-
         this.remotePlayers[id] = {
             mesh: mesh,
-            username: data.username || 'Player',
-            labelSprite: labelSprite,
             rotation: data.rotation || { x: 0, y: 0 },
             positionBuffer: [] // Buffer for interpolation
         };
@@ -284,25 +238,6 @@ export class Multiplayer {
                 this.addPlayer(id, playersData[id]);
             } else {
                 const p = this.remotePlayers[id];
-
-                // Update username if changed
-                if (playersData[id].username && playersData[id].username !== p.username) {
-                    p.username = playersData[id].username;
-                    // Update label sprite
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 64;
-                    const context = canvas.getContext('2d');
-                    context.font = 'Bold 20px Arial';
-                    context.fillStyle = 'white';
-                    context.strokeStyle = 'black';
-                    context.lineWidth = 3;
-                    context.strokeText(p.username, 128, 32);
-                    context.fillText(p.username, 128, 32);
-                    p.labelSprite.material.map = new THREE.CanvasTexture(canvas);
-                    p.labelSprite.material.needsUpdate = true;
-                }
-
                 // Add to buffer
                 if (playersData[id].position) {
                     p.positionBuffer.push({
@@ -332,23 +267,6 @@ export class Multiplayer {
                 rotation: { x: this.localPlayer.head.rotation.x, y: this.localPlayer.head.rotation.y }
             }));
             this.lastUpdate = now;
-        }
-
-        // Send inventory update to server (every 5 seconds or when changed)
-        if (now - this.lastInventoryUpdate > 5000 && this.ws && this.ws.readyState === WebSocket.OPEN) {
-            if (this.localPlayer.inventory) {
-                const currentInventoryState = JSON.stringify(this.localPlayer.inventory.slots);
-
-                // Only send if inventory actually changed
-                if (this.previousInventoryState !== currentInventoryState) {
-                    this.ws.send(JSON.stringify({
-                        type: 'inventory-update',
-                        inventory: this.localPlayer.inventory.slots
-                    }));
-                    this.previousInventoryState = currentInventoryState;
-                }
-            }
-            this.lastInventoryUpdate = now;
         }
 
         // Interpolate remote players
@@ -436,11 +354,5 @@ export class Multiplayer {
         }
         
         return currentTime;
-    }
-
-    // Change username (cosmetic only) - disabled for now since we don't have an in-game UI for this
-    changeUsername() {
-        // For now, just show a message. Could add an in-game UI later
-        console.log('Username changing is not available in-game yet. Join with a different name instead.');
     }
 }

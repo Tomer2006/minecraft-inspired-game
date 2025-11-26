@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 2025;
 const WORLD_FILE = 'world-data.json';
 const PLAYERS_FILE = 'players-data.json';
+const TIME_FILE = 'time-data.json';
 const SAVE_INTERVAL = 30000; // 30 seconds
 
 // --- Game Constants (Mirrored from Chunk.js) ---
@@ -51,6 +52,8 @@ const MIME_TYPES = {
 let worldData = {};
 // Players: { "playerId": { position: {x,y,z}, rotation: {x,y} } }
 let playerData = {};
+// Time: { "gameTime": number, "lastSaved": timestamp }
+let timeData = {};
 // Game Time (Authoritative server time)
 let gameTime = DAY_DURATION * 0.25; // Start at noon
 let dayNightAccumulator = 0;
@@ -79,6 +82,24 @@ function loadData() {
             playerData = {};
         }
     }
+
+    if (fs.existsSync(TIME_FILE)) {
+        try {
+            const data = fs.readFileSync(TIME_FILE, 'utf8');
+            timeData = JSON.parse(data);
+            if (timeData.gameTime !== undefined) {
+                gameTime = timeData.gameTime;
+                console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
+            } else {
+                console.log('Time data loaded but no gameTime found, using default.');
+            }
+        } catch (e) {
+            console.error('Failed to load time data:', e);
+            timeData = {};
+        }
+    } else {
+        console.log('No time data file found, starting with default time.');
+    }
 }
 loadData();
 
@@ -88,7 +109,13 @@ function saveData() {
         console.log('Saving data...');
         fs.writeFileSync(WORLD_FILE, JSON.stringify(worldData, null, 2));
         fs.writeFileSync(PLAYERS_FILE, JSON.stringify(playerData, null, 2));
-        console.log('Data saved.');
+
+        // Save current game time
+        timeData.gameTime = gameTime;
+        timeData.lastSaved = Date.now();
+        fs.writeFileSync(TIME_FILE, JSON.stringify(timeData, null, 2));
+
+        console.log(`Data saved. Game time: ${gameTime.toFixed(2)}s`);
     } catch (e) {
         console.error('Failed to save data:', e);
     }
