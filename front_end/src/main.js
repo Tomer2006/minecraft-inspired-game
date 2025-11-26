@@ -207,7 +207,7 @@ const LIGHTING_UPDATE_INTERVAL = 100; // Update lighting every 100ms max
 let lastLightingUpdate = 0;
 
 // Fixed Time Step for Day/Night Cycle - Reduced frequency for performance
-const DAY_NIGHT_TICK_RATE = 60; // Update 60 times per second (was 120, every ~16.7ms)
+const DAY_NIGHT_TICK_RATE = 30; // Update 60 times per second (was 120, every ~16.7ms)
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
