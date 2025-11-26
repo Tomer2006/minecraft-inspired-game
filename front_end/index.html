@@ -15,14 +15,23 @@
   </head>
   <body>
     <div id="overlay">
-      <!-- Main Menu -->
+      <!-- Start Menu -->
       <div id="menu-main" class="menu-screen">
         <h1>Minecraft-like Voxel World</h1>
         <div class="button-group">
-          <button id="btn-resume" class="menu-btn" style="display: none;">Resume</button>
           <button id="btn-play" class="menu-btn">Singleplayer</button>
           <button id="btn-multiplayer" class="menu-btn">Online</button>
           <button id="btn-options" class="menu-btn">Options</button>
+        </div>
+      </div>
+
+      <!-- In-Game Menu -->
+      <div id="menu-ingame" class="menu-screen" style="display: none;">
+        <h1>Game Paused</h1>
+        <div class="button-group">
+          <button id="btn-resume" class="menu-btn">Resume Game</button>
+          <button id="btn-options-ingame" class="menu-btn">Options</button>
+          <button id="btn-main-menu" class="menu-btn secondary">Main Menu</button>
         </div>
       </div>
 

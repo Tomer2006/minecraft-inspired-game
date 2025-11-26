@@ -26,6 +26,7 @@ export const DOMElements = {
     // Overlay & Menus
     get overlay() { return get('overlay'); },
     get menuMain() { return get('menu-main'); },
+    get menuIngame() { return get('menu-ingame'); },
     get menuPlay() { return get('menu-play'); },
     get menuOptions() { return get('menu-options'); },
     get menuCreate() { return get('menu-create'); },
@@ -37,6 +38,8 @@ export const DOMElements = {
     get btnMultiplayer() { return get('btn-multiplayer'); },
     get btnResume() { return get('btn-resume'); },
     get btnOptions() { return get('btn-options'); },
+    get btnOptionsIngame() { return get('btn-options-ingame'); },
+    get btnMainMenu() { return get('btn-main-menu'); },
     get btnBackMain() { return get('btn-back-main'); },
     get btnBackMainOpt() { return get('btn-back-main-opt'); },
     get btnCreateWorldMenu() { return get('btn-create-world-menu'); },
