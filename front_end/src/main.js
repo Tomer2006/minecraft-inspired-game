@@ -82,16 +82,11 @@ let multiplayer = null;
 
 // Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', async () => {
-    // Ask for username first
-    const username = prompt('Enter your username for multiplayer:', 'Player' + Math.floor(Math.random() * 1000));
+    // Ask for username (optional, cosmetic only)
+    const username = prompt('Enter your display name (optional):', 'Player' + Math.floor(Math.random() * 1000));
 
-    if (!username || username.trim() === '') {
-        alert('Username is required to join multiplayer!');
-        return;
-    }
-
-    // Store username for multiplayer
-    const trimmedUsername = username.trim().substring(0, 20); // Max 20 chars
+    // Username is purely cosmetic - no validation required
+    const displayName = username ? username.trim().substring(0, 20) : 'Player' + Math.floor(Math.random() * 1000);
 
     // Set Shared Seed for consistent world
     terrain.setSeed("multiplayer-shared-world-v1");

@@ -10,6 +10,13 @@ export class Multiplayer {
         this.id = null;
         this.lastUpdate = 0;
         this.isConnected = false;
+
+        // Add key listener for changing username (N key)
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'n' || event.key === 'N') {
+                this.changeUsername();
+            }
+        });
         
         // Time synchronization
         this.serverGameTime = null; // Server's authoritative game time
@@ -145,6 +152,25 @@ export class Multiplayer {
                 if (typeof data.gameTime === 'number') {
                     this.serverGameTime = data.gameTime;
                     this.lastServerTimeUpdate = Date.now();
+                }
+                break;
+            case 'username-update':
+                // Handle username change from another player
+                if (this.remotePlayers[data.id]) {
+                    this.remotePlayers[data.id].username = data.username;
+                    // Update label sprite
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 64;
+                    const context = canvas.getContext('2d');
+                    context.font = 'Bold 20px Arial';
+                    context.fillStyle = 'white';
+                    context.strokeStyle = 'black';
+                    context.lineWidth = 3;
+                    context.strokeText(data.username, 128, 32);
+                    context.fillText(data.username, 128, 32);
+                    this.remotePlayers[data.id].labelSprite.material.map = new THREE.CanvasTexture(canvas);
+                    this.remotePlayers[data.id].labelSprite.material.needsUpdate = true;
                 }
                 break;
             case 'block-update':
@@ -373,5 +399,21 @@ export class Multiplayer {
         }
         
         return currentTime;
+    }
+
+    // Change username (cosmetic only)
+    changeUsername() {
+        const newUsername = prompt('Enter new display name:', this.username);
+        if (newUsername !== null) { // Allow empty strings
+            this.username = newUsername.trim().substring(0, 20) || 'Player' + Math.floor(Math.random() * 1000);
+
+            // Send username update to server
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    type: 'username-change',
+                    username: this.username
+                }));
+            }
+        }
     }
 }

@@ -183,7 +183,7 @@ wss.on('connection', (ws) => {
                     ws: ws,
                     position: playerData[id].position,
                     rotation: playerData[id].rotation,
-                    username: data.username || `Player${id.substring(0, 4)}`
+                    username: data.username || `Player${Math.floor(Math.random() * 1000)}`
                 };
 
                 // Send Init Packet
@@ -255,6 +255,17 @@ wss.on('connection', (ws) => {
                             playerData[id].rotation = { ...activePlayers[id].rotation };
                         }
                     }
+                }
+            } else if (data.type === 'username-change') {
+                // Handle cosmetic username change
+                if (id && activePlayers[id]) {
+                    activePlayers[id].username = data.username || `Player${Math.floor(Math.random() * 1000)}`;
+                    // Broadcast username change to all other players
+                    broadcast({
+                        type: 'username-update',
+                        id: id,
+                        username: activePlayers[id].username
+                    }, ws);
                 }
             } else if (data.type === 'block-update') {
                 // Handle Block Modification (including air/removal)
