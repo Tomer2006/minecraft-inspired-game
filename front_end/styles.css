@@ -141,26 +141,72 @@ body {
 .option-group label {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 20px;
+    align-items: stretch;
 }
 
 .option-group label:last-child {
     margin-bottom: 0;
 }
-    color: #ccc;
-    font-size: 14px;
-}
 
 .option-group label:has(input[type="checkbox"]) {
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
+}
+
+.option-group label:has(input[type="checkbox"]) span {
+    margin-left: auto;
+    font-weight: normal;
+    opacity: 0.8;
 }
 
 .option-group input[type="range"] {
     width: 100%;
     cursor: pointer;
+    height: 6px;
+    border-radius: 3px;
+    background: #555;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.option-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #66aaff;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(102, 170, 255, 0.3);
+}
+
+.option-group input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #66aaff;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(102, 170, 255, 0.3);
+}
+
+/* Value display styling */
+.option-group label span {
+    display: inline-block;
+    min-width: 40px;
+    text-align: right;
+    font-weight: bold;
+    color: #66aaff;
+    background: rgba(102, 170, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 14px;
 }
 
 /* Removed old .overlay-content styles */
@@ -346,6 +392,32 @@ body {
   font-size: 16px;
   color: #ccc;
   font-weight: normal;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+/* Keybind list alignment */
+#keybind-list {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 20px;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+#keybind-list div:first-child {
+  text-align: left;
+  color: #aaa;
+}
+
+#keybind-list div:nth-child(2) {
+  text-align: right;
+  font-weight: bold;
+  color: #66aaff;
+  background: rgba(102, 170, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  min-width: 80px;
 }
 
 /* Username Modal Styles */
