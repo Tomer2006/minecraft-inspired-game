@@ -187,6 +187,23 @@ wss.on('connection', (ws) => {
                     username: data.username || `Player${Math.floor(Math.random() * 1000)}`
                 };
 
+                // If no saved inventory, initialize with starter items
+                if (!playerData[id].inventory) {
+                    playerData[id].inventory = [
+                        { type: 'grass', count: 999 },
+                        { type: 'dirt', count: 999 },
+                        { type: 'stone', count: 999 },
+                        { type: 'snow', count: 999 },
+                        { type: 'air', count: 0 }, // 4
+                        { type: 'air', count: 0 }, // 5
+                        { type: 'air', count: 0 }, // 6
+                        { type: 'air', count: 0 }, // 7
+                        { type: 'air', count: 0 }, // 8
+                        // Rest of inventory slots are air
+                        ...Array(27).fill({ type: 'air', count: 0 })
+                    ];
+                }
+
                 // Send Init Packet
                 ws.send(JSON.stringify({
                     type: 'init',
