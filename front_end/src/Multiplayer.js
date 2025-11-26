@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 export class Multiplayer {
-    constructor(scene, player) {
+    constructor(scene, player, username) {
         this.scene = scene;
         this.localPlayer = player;
+        this.username = username;
         this.remotePlayers = {};
         this.ws = null;
         this.id = null;
@@ -49,7 +50,8 @@ export class Multiplayer {
             const savedId = localStorage.getItem('multiplayer_id');
             this.ws.send(JSON.stringify({
                 type: 'join',
-                id: savedId || null
+                id: savedId || null,
+                username: this.username
             }));
         };
 
@@ -181,8 +183,29 @@ export class Multiplayer {
         
         this.scene.add(mesh);
         
+        // Create username label
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const context = canvas.getContext('2d');
+        context.font = 'Bold 20px Arial';
+        context.fillStyle = 'white';
+        context.strokeStyle = 'black';
+        context.lineWidth = 3;
+        context.strokeText(data.username || 'Player', 128, 32);
+        context.fillText(data.username || 'Player', 128, 32);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const labelMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const labelSprite = new THREE.Sprite(labelMaterial);
+        labelSprite.position.set(0, 2.5, 0); // Above player head
+        labelSprite.scale.set(2, 0.5, 1);
+        mesh.add(labelSprite);
+
         this.remotePlayers[id] = {
             mesh: mesh,
+            username: data.username || 'Player',
+            labelSprite: labelSprite,
             rotation: data.rotation || { x: 0, y: 0 },
             positionBuffer: [] // Buffer for interpolation
         };
@@ -215,6 +238,25 @@ export class Multiplayer {
                 this.addPlayer(id, playersData[id]);
             } else {
                 const p = this.remotePlayers[id];
+
+                // Update username if changed
+                if (playersData[id].username && playersData[id].username !== p.username) {
+                    p.username = playersData[id].username;
+                    // Update label sprite
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 64;
+                    const context = canvas.getContext('2d');
+                    context.font = 'Bold 20px Arial';
+                    context.fillStyle = 'white';
+                    context.strokeStyle = 'black';
+                    context.lineWidth = 3;
+                    context.strokeText(p.username, 128, 32);
+                    context.fillText(p.username, 128, 32);
+                    p.labelSprite.material.map = new THREE.CanvasTexture(canvas);
+                    p.labelSprite.material.needsUpdate = true;
+                }
+
                 // Add to buffer
                 if (playersData[id].position) {
                     p.positionBuffer.push({

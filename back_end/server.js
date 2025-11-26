@@ -182,7 +182,8 @@ wss.on('connection', (ws) => {
                     id: id,
                     ws: ws,
                     position: playerData[id].position,
-                    rotation: playerData[id].rotation
+                    rotation: playerData[id].rotation,
+                    username: data.username || `Player${id.substring(0, 4)}`
                 };
 
                 // Send Init Packet
@@ -200,6 +201,7 @@ wss.on('connection', (ws) => {
                     },
                     players: Object.values(activePlayers).map(p => ({
                         id: p.id,
+                        username: p.username,
                         position: { x: p.position.x, y: p.position.y, z: p.position.z },
                         rotation: { x: p.rotation.x, y: p.rotation.y }
                     })),
@@ -211,14 +213,15 @@ wss.on('connection', (ws) => {
                 broadcast({
                     type: 'player-joined',
                     id: id,
-                    position: { 
-                        x: activePlayers[id].position.x, 
-                        y: activePlayers[id].position.y, 
-                        z: activePlayers[id].position.z 
+                    username: activePlayers[id].username,
+                    position: {
+                        x: activePlayers[id].position.x,
+                        y: activePlayers[id].position.y,
+                        z: activePlayers[id].position.z
                     },
-                    rotation: { 
-                        x: activePlayers[id].rotation.x, 
-                        y: activePlayers[id].rotation.y 
+                    rotation: {
+                        x: activePlayers[id].rotation.x,
+                        y: activePlayers[id].rotation.y
                     }
                 }, ws);
 
@@ -346,14 +349,15 @@ setInterval(() => {
         // Ensure we send plain objects, not references
         playerUpdates[pid] = {
             id: pData.id,
-            position: { 
-                x: pData.position.x, 
-                y: pData.position.y, 
-                z: pData.position.z 
+            username: pData.username,
+            position: {
+                x: pData.position.x,
+                y: pData.position.y,
+                z: pData.position.z
             },
-            rotation: { 
-                x: pData.rotation.x, 
-                y: pData.rotation.y 
+            rotation: {
+                x: pData.rotation.x,
+                y: pData.rotation.y
             }
         };
     }

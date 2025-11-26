@@ -81,13 +81,24 @@ const player = new Player(scene, camera, terrain, renderer);
 let multiplayer = null;
 
 // Handle Multiplayer Button
-DOMElements.btnMultiplayer.addEventListener('click', () => {
+DOMElements.btnMultiplayer.addEventListener('click', async () => {
+    // Ask for username first
+    const username = prompt('Enter your username for multiplayer:', 'Player' + Math.floor(Math.random() * 1000));
+
+    if (!username || username.trim() === '') {
+        alert('Username is required to join multiplayer!');
+        return;
+    }
+
+    // Store username for multiplayer
+    const trimmedUsername = username.trim().substring(0, 20); // Max 20 chars
+
     // Set Shared Seed for consistent world
     terrain.setSeed("multiplayer-shared-world-v1");
-    
-    // Initialize Multiplayer
+
+    // Initialize Multiplayer with username
     if (!multiplayer) {
-        multiplayer = new Multiplayer(scene, player);
+        multiplayer = new Multiplayer(scene, player, trimmedUsername);
         
         // Hook into Terrain.setBlock to send updates
         // We wrap the original setBlock method
