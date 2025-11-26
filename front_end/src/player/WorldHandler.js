@@ -102,6 +102,30 @@ export class WorldHandler {
     console.log(`World saved successfully with ${Object.keys(data.terrain).length} modified chunks`);
   }
 
+  unloadWorld() {
+    console.log(`Unloading world: ${this.currentWorldId}`);
+
+    // Save the world before unloading if there are unsaved changes
+    if (this.currentWorldId && this.player.terrain.hasUnsavedChanges) {
+      this.saveWorld(this.currentWorldId);
+    }
+
+    // Clear terrain modifications
+    this.player.terrain.clearModifiedBlocks();
+
+    // Reset terrain to empty state (no seed, no modifications)
+    this.player.terrain.loadModifiedBlocks([], null);
+
+    // Clear current world ID
+    this.currentWorldId = null;
+
+    // Reset terrain change tracking
+    this.player.terrain.hasUnsavedChanges = false;
+    this.player.terrain.lastSaveTime = 0;
+
+    console.log('World unloaded successfully');
+  }
+
   resetPlayer() {
     const physics = this.player.physics;
     const eyeHeight = physics.STANDING_EYE_HEIGHT;

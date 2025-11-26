@@ -308,29 +308,36 @@ export class PlayerUI {
 
     if (btnMainMenu) {
       btnMainMenu.addEventListener('click', () => {
-        // Confirm exit
-        if (confirm('Are you sure you want to exit the game?')) {
-          // Disconnect from multiplayer
-          if (window.multiplayer) {
-            window.multiplayer.disconnect();
-            window.multiplayer = null;
-          }
+        console.log('Returning to main menu...');
 
-          // Clear current world
-          if (this.player.worldHandler.currentWorldId) {
-            this.player.worldHandler.unloadWorld();
-          }
-
-          // Exit the game by closing the window/tab
-          window.close();
-
-          // Fallback: if window.close() doesn't work (some browsers block it),
-          // navigate to a blank page or show exit message
-          setTimeout(() => {
-            // If we're still here, window.close() was blocked
-            document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 24px; font-family: Arial, sans-serif;">Game exited. You can close this tab.</div>';
-          }, 100);
+        // Disconnect from multiplayer
+        if (window.multiplayer) {
+          window.multiplayer.disconnect();
+          window.multiplayer = null;
         }
+
+        // Unload current world
+        if (this.player.worldHandler.currentWorldId) {
+          this.player.worldHandler.unloadWorld();
+        }
+
+        // Reset player position to spawn area
+        const eyeHeight = this.player.physics.STANDING_EYE_HEIGHT;
+        const spawnHeight = this.player.terrain.getHeightAtWorld(0, 0);
+        this.player.head.position.set(0, spawnHeight + eyeHeight + 5, 8);
+        this.player.physics.velocity.set(0, 0, 0);
+
+        // Ensure controls are unlocked for menu interaction
+        if (this.player.controls.isLocked) {
+          this.player.controls.unlock();
+        }
+
+        // Show main menu overlay
+        overlay.style.display = 'grid';
+        menuIngame.style.display = 'none';
+        menuMain.style.display = 'flex';
+
+        console.log('Successfully returned to main menu');
       });
     }
 
