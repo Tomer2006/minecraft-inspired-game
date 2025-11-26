@@ -8,7 +8,44 @@
     "rotation": {
       "x": -0.5727963057213934,
       "y": -1.2963706143592268
-    }
+    },
+    "inventory": [
+      {"type": "grass", "count": 999},
+      {"type": "dirt", "count": 999},
+      {"type": "stone", "count": 999},
+      {"type": "snow", "count": 999},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0}
+    ]
   },
   "1764094142626q8oyeztan": {
     "position": {
@@ -19,6 +56,43 @@
     "rotation": {
       "x": -0.06879630572138085,
       "y": 2.8775559215389115
-    }
+    },
+    "inventory": [
+      {"type": "grass", "count": 999},
+      {"type": "dirt", "count": 999},
+      {"type": "stone", "count": 999},
+      {"type": "snow", "count": 999},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0},
+      {"type": "air", "count": 0}
+    ]
   }
 }
