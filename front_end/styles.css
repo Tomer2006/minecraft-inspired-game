@@ -312,6 +312,35 @@ body {
     font-weight: bold;
 }
 
+/* Options Menu Two-Column Layout */
+.options-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  width: 100%;
+}
+
+.options-container .option-group {
+  margin: 0;
+}
+
+.options-container .option-group h3 {
+  text-align: left;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  font-size: 18px;
+  color: #fff;
+}
+
+.options-container .option-group h4 {
+  text-align: left;
+  margin: 15px 0 10px 0;
+  font-size: 16px;
+  color: #ccc;
+  font-weight: normal;
+}
+
 /* Username Modal Styles */
 .modal-overlay {
     position: fixed;
