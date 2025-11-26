@@ -24,7 +24,8 @@ body {
 
 .menu-screen {
   text-align: center;
-  width: 400px;
+  width: 900px;
+  max-width: 95vw;
   padding: 32px;
   background: rgba(15, 15, 20, 0.85);
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -129,7 +130,7 @@ body {
 
 .option-group {
     text-align: left;
-    padding: 10px;
+    padding: 25px;
     background: rgba(0,0,0,0.2);
     border-radius: 4px;
     display: flex;
@@ -140,7 +141,13 @@ body {
 .option-group label {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.option-group label:last-child {
+    margin-bottom: 0;
+}
     color: #ccc;
     font-size: 14px;
 }
@@ -316,7 +323,7 @@ body {
 .options-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  gap: 50px;
   width: 100%;
 }
 
