@@ -18,7 +18,7 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  background: radial-gradient(1200px 700px at 50% -10%, rgba(32, 64, 128, 0.25), rgba(0, 0, 0, 0.9));
+  background: transparent;
   z-index: 100; /* Topmost */
 }
 
