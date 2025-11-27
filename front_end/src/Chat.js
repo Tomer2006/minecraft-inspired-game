@@ -11,6 +11,10 @@ export class Chat {
         this.lastMessageTime = 0;
         this.messageCooldown = 1000; // 1 second cooldown between messages
 
+        // Input blocking
+        this.keyboardBlocker = null;
+        this.mouseBlocker = null;
+
         this.init();
     }
 
@@ -98,6 +102,9 @@ export class Chat {
 
         // Show recent messages
         this.showChat();
+
+        // Block game input while chat is open
+        this.blockGameInput();
     }
 
     closeChat() {
@@ -108,6 +115,60 @@ export class Chat {
         DOMElements.chatInput.value = '';
         DOMElements.chatInput.blur();
         this.historyIndex = -1;
+
+        // Unblock game input when chat closes
+        this.unblockGameInput();
+    }
+
+    blockGameInput() {
+        // Prevent keyboard events
+        this.keyboardBlocker = (event) => {
+            // Allow only specific keys for chat input
+            if (!['Enter', 'Escape', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        };
+
+        // Prevent mouse events
+        this.mouseBlocker = (event) => {
+            // Allow mouse events on chat elements
+            if (!DOMElements.chatContainer.contains(event.target)) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        };
+
+        // Add event listeners with capture to block before other handlers
+        document.addEventListener('keydown', this.keyboardBlocker, true);
+        document.addEventListener('keyup', this.keyboardBlocker, true);
+        document.addEventListener('keypress', this.keyboardBlocker, true);
+        document.addEventListener('mousedown', this.mouseBlocker, true);
+        document.addEventListener('mouseup', this.mouseBlocker, true);
+        document.addEventListener('mousemove', this.mouseBlocker, true);
+        document.addEventListener('click', this.mouseBlocker, true);
+        document.addEventListener('contextmenu', this.mouseBlocker, true);
+        document.addEventListener('wheel', this.mouseBlocker, true);
+    }
+
+    unblockGameInput() {
+        // Remove event listeners
+        if (this.keyboardBlocker) {
+            document.removeEventListener('keydown', this.keyboardBlocker, true);
+            document.removeEventListener('keyup', this.keyboardBlocker, true);
+            document.removeEventListener('keypress', this.keyboardBlocker, true);
+            this.keyboardBlocker = null;
+        }
+
+        if (this.mouseBlocker) {
+            document.removeEventListener('mousedown', this.mouseBlocker, true);
+            document.removeEventListener('mouseup', this.mouseBlocker, true);
+            document.removeEventListener('mousemove', this.mouseBlocker, true);
+            document.removeEventListener('click', this.mouseBlocker, true);
+            document.removeEventListener('contextmenu', this.mouseBlocker, true);
+            document.removeEventListener('wheel', this.mouseBlocker, true);
+            this.mouseBlocker = null;
+        }
     }
 
     showChat() {
