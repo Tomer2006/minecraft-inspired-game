@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { createNoise2D } from 'https://unpkg.com/simplex-noise@4.0.1/dist/esm/simplex-noise.js';
 import { mulberry32, cyrb128 } from './utils.js';
 import { Chunk, CHUNK_SIZE, BLOCKS, BLOCK_IDS, BLOCK_NAMES } from './Chunk.js';
-import { CullingManager } from './Culling.js';
 
 export class Terrain {
   constructor({
@@ -23,10 +22,7 @@ export class Terrain {
     this.chunks = new Map();
     this.pendingModifications = new Map(); // Store modifications for chunks not yet loaded
     this.group = new THREE.Group();
-
-    // Initialize culling system
-    this.cullingManager = new CullingManager(this);
-
+    
     this.initializeNoise();
 
     // Chunk Loading Queue
@@ -228,9 +224,11 @@ export class Terrain {
 
         console.log(`Block ${blockName} integrated into chunk ${chunk.cx},${chunk.cy},${chunk.cz} at local ${lx},${ly},${lz}`);
 
-        // Update Meshes (but don't add to scene yet - visibility will be managed separately)
+        // Update Meshes
         const meshes = chunk.buildMesh(this.materials);
-        // Note: Meshes are not added to scene here - visibility culling will handle this
+        Object.values(meshes).forEach(mesh => {
+            if (mesh.parent !== this.group) this.group.add(mesh);
+        });
 
         // Update neighbors
         const updateNeighbor = (ncx, ncy, ncz) => {
@@ -239,7 +237,9 @@ export class Terrain {
             if (nChunk) {
                 nChunk.needsUpdate = true;
                 const nMeshes = nChunk.buildMesh(this.materials);
-                // Note: Meshes are not added to scene here - visibility culling will handle this
+                Object.values(nMeshes).forEach(mesh => {
+                    if (mesh.parent !== this.group) this.group.add(mesh);
+                });
             }
         };
 
@@ -330,47 +330,6 @@ export class Terrain {
       }
   }
 
-  // Update chunk visibility based on culling
-  updateChunkVisibility(camera, cameraPosition) {
-    // Update spatial partition periodically (every few frames)
-    if (Math.random() < 0.1) { // 10% chance per frame
-      this.cullingManager.updateSpatialPartition();
-    }
-
-    // Use spatial partitioning to only check chunks in relevant areas
-    const renderRadius = this.renderDistance * 16 + 32; // Add some padding
-    const nearbyChunks = this.cullingManager.spatialPartition.getChunksInRadius(
-      cameraPosition.x, cameraPosition.z, renderRadius
-    );
-
-    // First, hide all chunks that are far away
-    for (const [key, chunk] of this.chunks.entries()) {
-      const chunkCenterX = (chunk.cx + 0.5) * 16;
-      const chunkCenterZ = (chunk.cz + 0.5) * 16;
-      const distanceSq = Math.pow(chunkCenterX - cameraPosition.x, 2) +
-                        Math.pow(chunkCenterZ - cameraPosition.z, 2);
-
-      const maxDistance = (this.renderDistance + 1) * 16;
-      const maxDistanceSq = maxDistance * maxDistance;
-
-      if (distanceSq > maxDistanceSq) {
-        chunk.setVisibility(false);
-        chunk.updateVisibilityInScene(this.group);
-      }
-    }
-
-    // Then check visibility for nearby chunks
-    for (const chunk of nearbyChunks) {
-      const shouldRender = this.cullingManager.shouldRenderChunk(
-        chunk.cx, chunk.cy, chunk.cz,
-        camera, cameraPosition, this.renderDistance
-      );
-
-      chunk.setVisibility(shouldRender);
-      chunk.updateVisibilityInScene(this.group);
-    }
-  }
-
   processChunkQueue(centerCX, centerCY, centerCZ) {
       if (this.chunkQueue.length === 0) return;
 
@@ -450,9 +409,9 @@ export class Terrain {
         console.log(`Applied ${pendingMods.length} pending modifications to newly generated chunk ${chunkKey}`);
       }
 
-      // Build Mesh (but don't add to scene yet - visibility will be managed separately)
+      // Build Mesh
       const meshes = chunk.buildMesh(this.materials);
-      // Note: Meshes are not added to scene here - visibility culling will handle this
+      Object.values(meshes).forEach(mesh => this.group.add(mesh));
 
       // Neighbors might need update
       const neighbors = [
@@ -512,9 +471,11 @@ export class Terrain {
       if (chunk) {
         // Chunk exists, load modifications immediately
         chunk.loadModifiedBlocks(modifications);
-        // Rebuild mesh (but don't add to scene yet - visibility will be managed separately)
+        // Rebuild mesh
         const meshes = chunk.buildMesh(this.materials);
-        // Note: Meshes are not added to scene here - visibility culling will handle this
+        Object.values(meshes).forEach(mesh => {
+          if (mesh.parent !== this.group) this.group.add(mesh);
+        });
         console.log(`Loaded ${modifications.length} modifications for chunk ${chunkKey}`);
       } else {
         // Chunk not loaded yet, store for when it gets generated

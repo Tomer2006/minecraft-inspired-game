@@ -49,8 +49,6 @@ export class PlayerUI {
     const checkShowCoords = DOMElements.checkShowCoords;
     const checkEnableShadows = DOMElements.checkEnableShadows;
     const checkShowPerformance = DOMElements.checkShowPerformance;
-    const checkFrustumCulling = DOMElements.checkFrustumCulling;
-    const checkOcclusionCulling = DOMElements.checkOcclusionCulling;
 
     const fpsCounter = DOMElements.fpsCounter;
     const coordsDisplay = DOMElements.coordsDisplay;
@@ -162,22 +160,6 @@ export class PlayerUI {
         this.player.showPerformanceChart = e.target.checked;
         this.player.settings.save();
         perfChartContainer.style.display = e.target.checked ? 'block' : 'none';
-      });
-    }
-
-    if (checkFrustumCulling) {
-      checkFrustumCulling.checked = this.player.terrain.cullingManager.enableFrustumCulling;
-      checkFrustumCulling.addEventListener('change', (e) => {
-        this.player.terrain.cullingManager.setFrustumCulling(e.target.checked);
-        this.player.settings.save();
-      });
-    }
-
-    if (checkOcclusionCulling) {
-      checkOcclusionCulling.checked = this.player.terrain.cullingManager.enableOcclusionCulling;
-      checkOcclusionCulling.addEventListener('change', (e) => {
-        this.player.terrain.cullingManager.setOcclusionCulling(e.target.checked);
-        this.player.settings.save();
       });
     }
 

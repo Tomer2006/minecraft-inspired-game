@@ -70,8 +70,6 @@ export const DOMElements = {
     get checkShowCoords() { return get('opt-show-coords'); },
     get checkEnableShadows() { return get('opt-enable-shadows'); },
     get checkShowPerformance() { return get('opt-show-performance'); },
-    get checkFrustumCulling() { return get('opt-frustum-culling'); },
-    get checkOcclusionCulling() { return get('opt-occlusion-culling'); },
 
     // HUD / Displays
     get fpsCounter() { return get('fps-counter'); },
