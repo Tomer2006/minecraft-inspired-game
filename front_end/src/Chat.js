@@ -98,11 +98,6 @@ export class Chat {
 
         // Show recent messages
         this.showChat();
-
-        // Prevent pointer lock while typing
-        if (document.pointerLockElement) {
-            document.exitPointerLock();
-        }
     }
 
     closeChat() {
