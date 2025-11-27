@@ -73,9 +73,14 @@ export class PlayerPhysics {
       this.currentPlayerHeight = player.movementState.sneak ? this.SNEAK_HEIGHT : this.STANDING_HEIGHT;
 
       // 1. Calculate movement direction from inputs
-      player.direction.x = Number(player.movementState.right) - Number(player.movementState.left);
-      player.direction.z = Number(player.movementState.forward) - Number(player.movementState.backward);
-      player.direction.normalize();
+      // Skip movement processing if chat is open
+      if (window.chat && window.chat.isOpen) {
+        player.direction.set(0, 0, 0);
+      } else {
+        player.direction.x = Number(player.movementState.right) - Number(player.movementState.left);
+        player.direction.z = Number(player.movementState.forward) - Number(player.movementState.backward);
+        player.direction.normalize();
+      }
 
       // 2. Apply movement forces to velocity
       const camDir = new THREE.Vector3();
@@ -87,11 +92,13 @@ export class PlayerPhysics {
       camSide.crossVectors(player.head.up, camDir).normalize();
 
       const moveVec = new THREE.Vector3();
-      if (player.movementState.forward) moveVec.add(camDir);
-      if (player.movementState.backward) moveVec.sub(camDir);
-      if (player.movementState.left) moveVec.add(camSide);
-      if (player.movementState.right) moveVec.sub(camSide);
-      moveVec.normalize();
+      if (!(window.chat && window.chat.isOpen)) {
+        if (player.movementState.forward) moveVec.add(camDir);
+        if (player.movementState.backward) moveVec.sub(camDir);
+        if (player.movementState.left) moveVec.add(camSide);
+        if (player.movementState.right) moveVec.sub(camSide);
+        moveVec.normalize();
+      }
 
       const speed = player.movementState.sneak ? this.SNEAK_SPEED : this.WALK_SPEED;
 
@@ -105,7 +112,7 @@ export class PlayerPhysics {
       }
 
       // 3. Jumping
-      if (player.movementState.jump && this.onGround) {
+      if (player.movementState.jump && this.onGround && !(window.chat && window.chat.isOpen)) {
         this.velocity.y = this.JUMP_SPEED;
         this.onGround = false;
       }

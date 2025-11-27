@@ -45,6 +45,8 @@ export class PlayerControls {
     // Handle Mouse Look
     const onMouseMove = (event) => {
       if (!this.player.controls.isLocked) return;
+      // If chat is open, don't process mouse movement
+      if (window.chat && window.chat.isOpen) return;
 
       const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
       const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
@@ -66,6 +68,11 @@ export class PlayerControls {
 
   setupInputs() {
     const onKeyDown = (event) => {
+      // If chat is open, don't process any controls
+      if (window.chat && window.chat.isOpen) {
+        return;
+      }
+
       // Inventory Toggle
       if (event.code === this.player.keybinds.inventory) {
         if (this.player.inventory.toggle()) {
@@ -117,6 +124,11 @@ export class PlayerControls {
     };
 
     const onKeyUp = (event) => {
+      // If chat is open, don't process any controls
+      if (window.chat && window.chat.isOpen) {
+        return;
+      }
+
       switch (event.code) {
         case this.player.keybinds.forward:
         case 'ArrowUp':
