@@ -124,12 +124,6 @@ export class Chat {
     blockGameInput() {
         // Prevent keyboard events
         this.keyboardBlocker = (event) => {
-            // Always allow typing when chat input is focused
-            if (DOMElements.chatInput === document.activeElement) {
-                // Allow all input in the chat field
-                return;
-            }
-
             // Block game control keys when chat is open
             const gameControlKeys = [
                 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight',
@@ -137,13 +131,15 @@ export class Chat {
                 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'
             ];
 
-            // Allow chat navigation and input keys
-            const chatKeys = ['Enter', 'Escape', 'ArrowUp', 'ArrowDown'];
-
-            if (gameControlKeys.includes(event.code) && !chatKeys.includes(event.key)) {
+            // Always block game controls when chat is open
+            if (gameControlKeys.includes(event.code)) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
+                return;
             }
+
+            // Allow typing and chat navigation keys to work normally
+            // (they will be handled by the chat input or chat handlers)
         };
 
         // Prevent mouse events
