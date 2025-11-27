@@ -206,7 +206,7 @@ const LIGHTING_UPDATE_THRESHOLD = 0.16; // Sun Y position change over ~30s at ma
 const POSITION_UPDATE_THRESHOLD = 0.02; // Less frequent position updates (was 0.005)
 
 // Further reduce update frequency
-const DAY_NIGHT_TICK_RATE = 1; // From 2 - update once per second instead of twice
+const DAY_NIGHT_TICK_RATE = 0.5; // From 2 - update once per second instead of twice
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
