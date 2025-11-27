@@ -163,19 +163,21 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-// Handle chat keybind (configurable)
+// Handle chat keybind (configurable) - must be before controls setup
 document.addEventListener('keydown', (event) => {
     // Handle chat keybind when not in menus
     if (player && player.keybinds && event.code === (player.keybinds.chat || 'KeyT') && !event.repeat) {
         // Don't trigger if typing in an input field
         if (event.target.tagName !== 'INPUT') {
             event.preventDefault();
+            event.stopImmediatePropagation(); // Stop other listeners
             if (chat) {
                 chat.openChat();
             }
+            return false; // Prevent further processing
         }
     }
-});
+}, true); // Use capture phase to run before other listeners
 
 // Handle Back Button (Disconnect Multiplayer)
 DOMElements.btnBackMain.addEventListener('click', () => {
