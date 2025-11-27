@@ -13,6 +13,8 @@ export class PlayerSettings {
       if (settings.enableShadows !== undefined) this.player.enableShadows = settings.enableShadows;
       if (settings.showPerformanceChart !== undefined) this.player.showPerformanceChart = settings.showPerformanceChart;
       if (settings.maxFps !== undefined) this.player.maxFps = settings.maxFps;
+      if (settings.enableFrustumCulling !== undefined) this.player.terrain.cullingManager.setFrustumCulling(settings.enableFrustumCulling);
+      if (settings.enableOcclusionCulling !== undefined) this.player.terrain.cullingManager.setOcclusionCulling(settings.enableOcclusionCulling);
     }
   }
 

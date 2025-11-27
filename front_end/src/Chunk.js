@@ -41,6 +41,11 @@ export class Chunk {
     this.modifiedBlocks = new Map(); // Player modifications: key -> id
     this.meshes = {}; // Map<BlockID, InstancedMesh>
     this.needsUpdate = true;
+
+    // Visibility tracking for culling
+    this.isVisible = true;
+    this.wasVisible = true;
+    this.visibilityChanged = false;
   }
 
   // Returns numeric ID
@@ -171,6 +176,43 @@ export class Chunk {
   loadModifiedBlocks(data) {
     this.modifiedBlocks = new Map(data);
     this.needsUpdate = true;
+  }
+
+  // Visibility management for culling
+  setVisibility(visible) {
+    this.wasVisible = this.isVisible;
+    this.isVisible = visible;
+    this.visibilityChanged = (this.wasVisible !== this.isVisible);
+  }
+
+  updateVisibilityInScene(sceneGroup) {
+    if (!this.visibilityChanged) return;
+
+    Object.values(this.meshes).forEach(mesh => {
+      if (this.isVisible) {
+        if (!mesh.parent) {
+          sceneGroup.add(mesh);
+        }
+      } else {
+        if (mesh.parent) {
+          mesh.parent.remove(mesh);
+        }
+      }
+    });
+
+    this.visibilityChanged = false;
+  }
+
+  // Get chunk bounds for culling calculations
+  getBounds() {
+    return {
+      minX: this.cx * CHUNK_SIZE,
+      minY: this.cy * CHUNK_SIZE,
+      minZ: this.cz * CHUNK_SIZE,
+      maxX: (this.cx + 1) * CHUNK_SIZE,
+      maxY: (this.cy + 1) * CHUNK_SIZE,
+      maxZ: (this.cz + 1) * CHUNK_SIZE
+    };
   }
 }
 

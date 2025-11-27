@@ -393,6 +393,9 @@ function animate() {
     // Update Terrain Generation (Infinite World)
     terrain.update(camera.position.x, camera.position.y, camera.position.z);
 
+    // Update chunk visibility with culling
+    terrain.updateChunkVisibility(camera, camera.position);
+
     const t2 = performance.now();
 
     // Update Player (Physics, Input)
