@@ -81,7 +81,9 @@ const player = new Player(scene, camera, terrain, renderer);
 
 // Multiplayer
 let multiplayer = null;
-let chat = null;
+
+// Chat (available in both singleplayer and multiplayer)
+let chat = new Chat(null); // Initialize with null multiplayer initially
 
 // Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', async () => {
@@ -109,8 +111,8 @@ DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
     if (!multiplayer) {
         multiplayer = new Multiplayer(scene, player, displayName);
 
-        // Initialize Chat
-        chat = new Chat(multiplayer);
+        // Update chat with multiplayer instance
+        chat.setMultiplayer(multiplayer);
 
         // Hook into Terrain.setBlock to send updates
         // We wrap the original setBlock method
@@ -182,9 +184,8 @@ DOMElements.btnBackMain.addEventListener('click', () => {
         window.multiplayer = null;
     }
     if (chat) {
+        chat.setMultiplayer(null); // Clear multiplayer reference
         chat.closeChat();
-        chat = null;
-        window.chat = null;
     }
 });
 

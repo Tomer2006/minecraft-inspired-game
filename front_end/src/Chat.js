@@ -24,7 +24,17 @@ export class Chat {
         }
 
         // Add welcome message
-        this.addSystemMessage('Welcome to the game! Press T to chat.');
+        this.addSystemMessage('Welcome to the game! Press T to open chat.');
+    }
+
+    // Method to update multiplayer instance (for when connecting/disconnecting)
+    setMultiplayer(multiplayer) {
+        this.multiplayer = multiplayer;
+
+        // Re-setup multiplayer handlers if multiplayer is available
+        if (this.multiplayer) {
+            this.setupMultiplayerHandlers();
+        }
     }
 
     setupEventListeners() {
@@ -81,11 +91,6 @@ export class Chat {
     }
 
     openChat() {
-        if (!this.multiplayer || !this.multiplayer.isConnected) {
-            this.addSystemMessage('Chat is only available in multiplayer mode.');
-            return;
-        }
-
         this.isOpen = true;
         DOMElements.chatContainer.style.display = 'block';
         DOMElements.chatInput.focus();
@@ -152,6 +157,8 @@ export class Chat {
             if (this.messageHistory.length > 50) { // Keep last 50 messages
                 this.messageHistory.pop();
             }
+        } else {
+            this.addSystemMessage('You must be connected to multiplayer to send messages.');
         }
 
         // Clear input and close chat
@@ -271,9 +278,9 @@ export class Chat {
     // Method to be called by multiplayer when connection status changes
     onConnectionChange(isConnected) {
         if (!isConnected) {
-            this.addSystemMessage('Disconnected from server. Chat unavailable.');
+            this.addSystemMessage('Disconnected from server. Messages will not be sent.');
         } else {
-            this.addSystemMessage('Connected to server. Press T to chat.');
+            this.addSystemMessage('Connected to server. You can now send messages to other players.');
         }
     }
 }
