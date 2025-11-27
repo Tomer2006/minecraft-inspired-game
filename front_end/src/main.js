@@ -161,10 +161,10 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-// Handle chat keybind (T key)
+// Handle chat keybind (configurable)
 document.addEventListener('keydown', (event) => {
     // Only handle chat keybind when in game (not in menus)
-    if (DOMElements.overlay.style.display === 'none' && event.key === 'KeyT' && !event.repeat) {
+    if (DOMElements.overlay.style.display === 'none' && player && player.keybinds && event.code === player.keybinds.chat && !event.repeat) {
         event.preventDefault();
         if (chat) {
             chat.openChat();

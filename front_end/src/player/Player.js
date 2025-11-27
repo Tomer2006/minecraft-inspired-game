@@ -34,7 +34,8 @@ export class Player {
       'jump': 'Space',
       'sneak': 'ShiftLeft',
       'inventory': 'KeyE',
-      'perspective': 'KeyR'
+      'perspective': 'KeyR',
+      'chat': 'KeyT'
     };
 
     // Settings State

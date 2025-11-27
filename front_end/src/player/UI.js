@@ -171,7 +171,8 @@ export class PlayerUI {
       'jump': 'Space',
       'sneak': 'ShiftLeft',
       'inventory': 'KeyE',
-      'perspective': 'KeyR'
+      'perspective': 'KeyR',
+      'chat': 'KeyT'
     };
 
     // Render Keybinds
@@ -267,7 +268,8 @@ export class PlayerUI {
             'jump': 'Space',
             'sneak': 'ShiftLeft',
             'inventory': 'KeyE',
-            'perspective': 'KeyR'
+            'perspective': 'KeyR',
+            'chat': 'KeyT'
           };
           this.player.settings.save();
           renderKeybinds();
