@@ -70,32 +70,32 @@ const serverStartTime = Date.now();
 
 // Load Data from Database
 async function loadData() {
-    try {
+        try {
         // Initialize database connection and schema
         await initializeDatabase();
 
         // Load world data
         worldData = await loadWorldData();
-        console.log(`World loaded. ${Object.keys(worldData).length} chunks modified.`);
+            console.log(`World loaded. ${Object.keys(worldData).length} chunks modified.`);
 
         // Load player data
         playerData = await loadPlayerData();
-        console.log(`Player data loaded. ${Object.keys(playerData).length} known players.`);
+            console.log(`Player data loaded. ${Object.keys(playerData).length} known players.`);
 
         // Load time data
         timeData = await loadTimeData();
-        if (timeData.gameTime !== undefined) {
-            gameTime = timeData.gameTime;
-            console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
-        } else {
-            console.log('Time data loaded but no gameTime found, using default.');
-        }
-    } catch (e) {
+            if (timeData.gameTime !== undefined) {
+                gameTime = timeData.gameTime;
+                console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
+            } else {
+                console.log('Time data loaded but no gameTime found, using default.');
+            }
+        } catch (e) {
         console.error('Failed to load data from database:', e);
         // Fallback to empty data structures
         worldData = {};
         playerData = {};
-        timeData = {};
+            timeData = {};
     }
 }
 await loadData();
@@ -359,7 +359,7 @@ wss.on('connection', (ws) => {
 
                     // Save to database
                     await saveWorldModification(chunkKey, localKey, blockId);
-
+                    
                     // If block is air, we can optionally clean up the entry, but keeping it
                     // ensures we track that this block was explicitly removed
 

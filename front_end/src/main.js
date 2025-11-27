@@ -203,11 +203,11 @@ let lastSunVisible = true; // Cache sun/moon visibility to avoid redundant updat
 // Reduced update frequencies for better performance
 const LIGHTING_UPDATE_THRESHOLD = 0.01; // Less frequent lighting updates (was 0.001)
 const POSITION_UPDATE_THRESHOLD = 0.02; // Less frequent position updates (was 0.005)
-const LIGHTING_UPDATE_INTERVAL = 100; // Update lighting every 100ms max
+const LIGHTING_UPDATE_INTERVAL = 30000; // Update lighting every 30s max
 let lastLightingUpdate = 0;
 
 // Fixed Time Step for Day/Night Cycle - Reduced frequency for performance
-const DAY_NIGHT_TICK_RATE = 30; // Update 60 times per second (was 120, every ~16.7ms)
+const DAY_NIGHT_TICK_RATE = 1; // Update 60 times per second (was 120, every ~16.7ms)
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
