@@ -1,7 +1,8 @@
 import { DOMElements } from './domElements.js';
 
 export class Chat {
-    constructor(multiplayer) {
+    constructor(player, multiplayer) {
+        this.player = player;
         this.multiplayer = multiplayer;
         this.isOpen = false;
         this.messages = [];
@@ -129,12 +130,20 @@ export class Chat {
                 return; // Allow all input to reach the focused input field
             }
 
-            // When chat input is not focused, block game controls
-            const gameControlKeys = [
-                'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight',
-                'KeyE', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5',
-                'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'
-            ];
+            // When chat input is not focused, block current game control keybinds
+            // Get all keybind values except 'chat' (since that's what opens chat)
+            const gameControlKeys = [];
+            if (this.player && this.player.keybinds) {
+                for (const [action, key] of Object.entries(this.player.keybinds)) {
+                    if (action !== 'chat') { // Don't block the chat key itself
+                        gameControlKeys.push(key);
+                    }
+                }
+            }
+
+            // Also block number keys for hotbar (these aren't in keybinds but should be blocked)
+            gameControlKeys.push('Digit0', 'Digit1', 'Digit2', 'Digit3', 'Digit4',
+                               'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9');
 
             if (gameControlKeys.includes(event.code)) {
                 event.preventDefault();

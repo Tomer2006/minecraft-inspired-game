@@ -83,7 +83,7 @@ const player = new Player(scene, camera, terrain, renderer);
 let multiplayer = null;
 
 // Chat (available in both singleplayer and multiplayer)
-let chat = new Chat(null); // Initialize with null multiplayer initially
+let chat = new Chat(player, null); // Initialize with player and null multiplayer initially
 
 // Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', async () => {
