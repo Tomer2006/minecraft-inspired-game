@@ -32,7 +32,8 @@ dirLight.castShadow = true;
 dirLight.shadow.bias = -0.0005; // Fix: Reduce shadow acne/z-fighting
 dirLight.shadow.camera.near = 0.5;
 dirLight.shadow.camera.far = 400;
-dirLight.shadow.mapSize.set(2048, 2048);
+// Reduce shadow map size
+dirLight.shadow.mapSize.set(1024, 1024); // From 2048x2048
 // Fix: Expand shadow camera frustum
 const d = 100;
 dirLight.shadow.camera.left = -d;
@@ -201,13 +202,11 @@ let lastSunAngle = 0;
 let lastSunVisible = true; // Cache sun/moon visibility to avoid redundant updates
 
 // Reduced update frequencies for better performance
-const LIGHTING_UPDATE_THRESHOLD = 0.01; // Less frequent lighting updates (was 0.001)
+const LIGHTING_UPDATE_THRESHOLD = 0.16; // Sun Y position change over ~30s at max speed
 const POSITION_UPDATE_THRESHOLD = 0.02; // Less frequent position updates (was 0.005)
-const LIGHTING_UPDATE_INTERVAL = 30000; // Update lighting every 30s max
-let lastLightingUpdate = 0;
 
-// Fixed Time Step for Day/Night Cycle - Reduced frequency for performance
-const DAY_NIGHT_TICK_RATE = 1; // Update 60 times per second (was 120, every ~16.7ms)
+// Further reduce update frequency
+const DAY_NIGHT_TICK_RATE = 1; // From 2 - update once per second instead of twice
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
 let dayNightAccumulator = 0;
 
@@ -315,14 +314,11 @@ function animate() {
     }
   }
 
-  // Performance optimization: Update lighting less frequently using time-based intervals
-  const currentTime = performance.now();
-  const needsLightingUpdate = (Math.abs(sunY - lastSunY) > LIGHTING_UPDATE_THRESHOLD) ||
-                              (currentTime - lastLightingUpdate > LIGHTING_UPDATE_INTERVAL);
+  // Performance optimization: Update lighting less frequently using position threshold
+  const needsLightingUpdate = (Math.abs(sunY - lastSunY) > LIGHTING_UPDATE_THRESHOLD);
 
   if (needsLightingUpdate) {
     lastSunY = sunY;
-    lastLightingUpdate = currentTime;
 
     // Update sky and lighting based on sun position
     if (sunY > 0.2) {
