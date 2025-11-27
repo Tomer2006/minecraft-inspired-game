@@ -14,6 +14,7 @@ export class Chat {
         // Input blocking
         this.keyboardBlocker = null;
         this.mouseBlocker = null;
+        this.focusMaintainer = null;
 
         this.init();
     }
@@ -123,8 +124,23 @@ export class Chat {
     blockGameInput() {
         // Prevent keyboard events
         this.keyboardBlocker = (event) => {
-            // Allow only specific keys for chat input
-            if (!['Enter', 'Escape', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+            // Always allow typing when chat input is focused
+            if (DOMElements.chatInput === document.activeElement) {
+                // Allow all input in the chat field
+                return;
+            }
+
+            // Block game control keys when chat is open
+            const gameControlKeys = [
+                'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight',
+                'KeyE', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5',
+                'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'
+            ];
+
+            // Allow chat navigation and input keys
+            const chatKeys = ['Enter', 'Escape', 'ArrowUp', 'ArrowDown'];
+
+            if (gameControlKeys.includes(event.code) && !chatKeys.includes(event.key)) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
             }
@@ -139,6 +155,13 @@ export class Chat {
             }
         };
 
+        // Keep chat input focused while chat is open
+        this.focusMaintainer = () => {
+            if (this.isOpen && DOMElements.chatInput !== document.activeElement) {
+                DOMElements.chatInput.focus();
+            }
+        };
+
         // Add event listeners with capture to block before other handlers
         document.addEventListener('keydown', this.keyboardBlocker, true);
         document.addEventListener('keyup', this.keyboardBlocker, true);
@@ -149,6 +172,7 @@ export class Chat {
         document.addEventListener('click', this.mouseBlocker, true);
         document.addEventListener('contextmenu', this.mouseBlocker, true);
         document.addEventListener('wheel', this.mouseBlocker, true);
+        document.addEventListener('focusin', this.focusMaintainer);
     }
 
     unblockGameInput() {
@@ -168,6 +192,11 @@ export class Chat {
             document.removeEventListener('contextmenu', this.mouseBlocker, true);
             document.removeEventListener('wheel', this.mouseBlocker, true);
             this.mouseBlocker = null;
+        }
+
+        if (this.focusMaintainer) {
+            document.removeEventListener('focusin', this.focusMaintainer);
+            this.focusMaintainer = null;
         }
     }
 
