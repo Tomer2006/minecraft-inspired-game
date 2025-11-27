@@ -1,0 +1,279 @@
+import { DOMElements } from './domElements.js';
+
+export class Chat {
+    constructor(multiplayer) {
+        this.multiplayer = multiplayer;
+        this.isOpen = false;
+        this.messages = [];
+        this.maxMessages = 100; // Maximum messages to keep in history
+        this.messageHistory = []; // For navigating through sent messages
+        this.historyIndex = -1;
+        this.lastMessageTime = 0;
+        this.messageCooldown = 1000; // 1 second cooldown between messages
+
+        this.init();
+    }
+
+    init() {
+        // Set up event listeners
+        this.setupEventListeners();
+
+        // Set up multiplayer message handling if multiplayer is available
+        if (this.multiplayer) {
+            this.setupMultiplayerHandlers();
+        }
+
+        // Add welcome message
+        this.addSystemMessage('Welcome to the game! Press T to chat.');
+    }
+
+    setupEventListeners() {
+        const chatInput = DOMElements.chatInput;
+
+        // Handle chat input
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                this.sendMessage();
+            } else if (e.key === 'Escape') {
+                this.closeChat();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.navigateHistory(-1);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.navigateHistory(1);
+            }
+        });
+
+        chatInput.addEventListener('input', (e) => {
+            // Reset history navigation on typing
+            this.historyIndex = -1;
+        });
+
+        // Handle clicking outside chat to close it
+        document.addEventListener('click', (e) => {
+            if (this.isOpen && !DOMElements.chatContainer.contains(e.target)) {
+                this.closeChat();
+            }
+        });
+
+        // Handle pointer lock changes
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement) {
+                // Pointer locked, close chat
+                this.closeChat();
+            }
+        });
+    }
+
+    setupMultiplayerHandlers() {
+        if (!this.multiplayer) return;
+
+        // Listen for chat messages from server
+        const originalHandleMessage = this.multiplayer.handleMessage.bind(this.multiplayer);
+        this.multiplayer.handleMessage = (data) => {
+            if (data.type === 'chat-message') {
+                this.receiveMessage(data);
+            } else {
+                originalHandleMessage(data);
+            }
+        };
+    }
+
+    openChat() {
+        if (!this.multiplayer || !this.multiplayer.isConnected) {
+            this.addSystemMessage('Chat is only available in multiplayer mode.');
+            return;
+        }
+
+        this.isOpen = true;
+        DOMElements.chatContainer.style.display = 'block';
+        DOMElements.chatInput.focus();
+        DOMElements.chatInput.select();
+
+        // Show recent messages
+        this.showChat();
+
+        // Prevent pointer lock while typing
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
+    }
+
+    closeChat() {
+        if (!this.isOpen) return;
+
+        this.isOpen = false;
+        DOMElements.chatContainer.style.display = 'none';
+        DOMElements.chatInput.value = '';
+        DOMElements.chatInput.blur();
+        this.historyIndex = -1;
+    }
+
+    showChat() {
+        // Temporarily show chat for a few seconds
+        DOMElements.chatContainer.style.display = 'block';
+        clearTimeout(this.hideTimeout);
+
+        this.hideTimeout = setTimeout(() => {
+            if (!this.isOpen) {
+                DOMElements.chatContainer.style.display = 'none';
+            }
+        }, 5000); // Hide after 5 seconds if not actively chatting
+    }
+
+    sendMessage() {
+        const message = DOMElements.chatInput.value.trim();
+        if (!message) {
+            this.closeChat();
+            return;
+        }
+
+        // Check cooldown
+        const now = Date.now();
+        if (now - this.lastMessageTime < this.messageCooldown) {
+            this.addSystemMessage('Please wait before sending another message.');
+            return;
+        }
+
+        // Check message length
+        if (message.length > 256) {
+            this.addSystemMessage('Message too long (max 256 characters).');
+            return;
+        }
+
+        // Send message via multiplayer
+        if (this.multiplayer && this.multiplayer.isConnected) {
+            this.multiplayer.sendChatMessage(message);
+            this.lastMessageTime = now;
+
+            // Add to local history
+            this.messageHistory.unshift(message);
+            if (this.messageHistory.length > 50) { // Keep last 50 messages
+                this.messageHistory.pop();
+            }
+        }
+
+        // Clear input and close chat
+        DOMElements.chatInput.value = '';
+        this.closeChat();
+    }
+
+    receiveMessage(data) {
+        const { sender, message, timestamp } = data;
+        this.addChatMessage(sender, message, timestamp);
+    }
+
+    addChatMessage(sender, message, timestamp = Date.now()) {
+        const messageData = {
+            type: 'chat',
+            sender: sender,
+            message: message,
+            timestamp: timestamp
+        };
+
+        this.messages.push(messageData);
+
+        // Limit message history
+        if (this.messages.length > this.maxMessages) {
+            this.messages.shift();
+        }
+
+        this.updateChatDisplay();
+
+        // Show chat when receiving messages
+        if (!this.isOpen) {
+            this.showChat();
+        }
+    }
+
+    addSystemMessage(message) {
+        const messageData = {
+            type: 'system',
+            message: message,
+            timestamp: Date.now()
+        };
+
+        this.messages.push(messageData);
+
+        // Limit message history
+        if (this.messages.length > this.maxMessages) {
+            this.messages.shift();
+        }
+
+        this.updateChatDisplay();
+
+        // Show chat for system messages
+        if (!this.isOpen) {
+            this.showChat();
+        }
+    }
+
+    updateChatDisplay() {
+        const chatMessages = DOMElements.chatMessages;
+        chatMessages.innerHTML = '';
+
+        // Display last 10 messages or all if fewer
+        const displayMessages = this.messages.slice(-10);
+
+        displayMessages.forEach(msg => {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message';
+
+            if (msg.type === 'system') {
+                messageElement.className += ' system-message';
+                messageElement.textContent = msg.message;
+            } else {
+                const time = new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                messageElement.innerHTML = `<span class="chat-time">[${time}]</span> <span class="chat-sender">&lt;${this.escapeHtml(msg.sender)}&gt;</span> ${this.escapeHtml(msg.message)}`;
+            }
+
+            chatMessages.appendChild(messageElement);
+        });
+
+        // Auto-scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    navigateHistory(direction) {
+        if (this.messageHistory.length === 0) return;
+
+        this.historyIndex += direction;
+
+        // Clamp index
+        if (this.historyIndex < -1) {
+            this.historyIndex = -1;
+        } else if (this.historyIndex >= this.messageHistory.length) {
+            this.historyIndex = this.messageHistory.length - 1;
+        }
+
+        if (this.historyIndex === -1) {
+            DOMElements.chatInput.value = '';
+        } else {
+            DOMElements.chatInput.value = this.messageHistory[this.historyIndex];
+        }
+
+        // Move cursor to end
+        setTimeout(() => {
+            DOMElements.chatInput.selectionStart = DOMElements.chatInput.selectionEnd = DOMElements.chatInput.value.length;
+        }, 0);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Method to be called by multiplayer when connection status changes
+    onConnectionChange(isConnected) {
+        if (!isConnected) {
+            this.addSystemMessage('Disconnected from server. Chat unavailable.');
+        } else {
+            this.addSystemMessage('Connected to server. Press T to chat.');
+        }
+    }
+}

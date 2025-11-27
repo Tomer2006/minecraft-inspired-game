@@ -181,6 +181,15 @@ export class Multiplayer {
         }
     }
 
+    sendChatMessage(message) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'chat-message',
+                message: message
+            }));
+        }
+    }
+
     addPlayer(id, data) {
         if (this.remotePlayers[id]) return;
 

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { Terrain } from './Terrain.js';
 import { Player } from './player/Player.js';
 import { Multiplayer } from './Multiplayer.js';
+import { Chat } from './Chat.js';
 import { DOMElements } from './domElements.js';
 
 // Renderer
@@ -80,6 +81,7 @@ const player = new Player(scene, camera, terrain, renderer);
 
 // Multiplayer
 let multiplayer = null;
+let chat = null;
 
 // Handle Multiplayer Button
 DOMElements.btnMultiplayer.addEventListener('click', async () => {
@@ -106,24 +108,28 @@ DOMElements.btnJoinMultiplayer.addEventListener('click', () => {
     // Initialize Multiplayer with username
     if (!multiplayer) {
         multiplayer = new Multiplayer(scene, player, displayName);
-        
+
+        // Initialize Chat
+        chat = new Chat(multiplayer);
+
         // Hook into Terrain.setBlock to send updates
         // We wrap the original setBlock method
         const originalSetBlock = terrain.setBlock.bind(terrain);
-        
+
         terrain.setBlock = function(x, y, z, blockName, isRemote = false) {
             // Call original logic to update local world
             originalSetBlock(x, y, z, blockName);
-            
+
             // If it's a local action (isRemote is false or undefined), send to server
             if (!isRemote && multiplayer && multiplayer.isConnected) {
                 multiplayer.sendBlockUpdate(x, y, z, blockName);
             }
         };
-        
+
         // Expose globally for UI
         window.multiplayer = multiplayer;
-        
+        window.chat = chat;
+
     } else {
         // Re-connect if needed or just reuse
         if (!multiplayer.ws || multiplayer.ws.readyState !== WebSocket.OPEN) {
@@ -155,6 +161,17 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+// Handle chat keybind (T key)
+document.addEventListener('keydown', (event) => {
+    // Only handle chat keybind when in game (not in menus)
+    if (DOMElements.overlay.style.display === 'none' && event.key === 'KeyT' && !event.repeat) {
+        event.preventDefault();
+        if (chat) {
+            chat.openChat();
+        }
+    }
+});
+
 // Handle Back Button (Disconnect Multiplayer)
 DOMElements.btnBackMain.addEventListener('click', () => {
     if (multiplayer) {
@@ -163,6 +180,11 @@ DOMElements.btnBackMain.addEventListener('click', () => {
         // Actually, if we disconnect, we might want to reset the object to ensure fresh state
         multiplayer = null;
         window.multiplayer = null;
+    }
+    if (chat) {
+        chat.closeChat();
+        chat = null;
+        window.chat = null;
     }
 });
 

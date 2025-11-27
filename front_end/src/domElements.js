@@ -97,4 +97,9 @@ export const DOMElements = {
     get hotbarInventoryGrid() { return get('hotbar-inventory-grid'); },
     get inventoryScreen() { return get('inventory-screen'); },
     get floatingItem() { return get('floating-item'); },
+
+    // Chat
+    get chatContainer() { return get('chat-container'); },
+    get chatMessages() { return get('chat-messages'); },
+    get chatInput() { return get('chat-input'); },
 };

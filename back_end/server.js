@@ -322,24 +322,46 @@ wss.on('connection', (ws) => {
                     // Save inventory update to database immediately (critical data)
                     await savePlayerData(id, playerData[id]);
                 }
+            } else if (data.type === 'chat-message') {
+                // Handle Chat Message
+                const { message } = data;
+
+                // Validate chat message data
+                if (typeof message !== 'string' || message.trim().length === 0 || message.length > 256) {
+                    console.warn('Invalid chat message:', data);
+                    return;
+                }
+
+                // Get sender's username
+                const senderUsername = activePlayers[id]?.username || 'Unknown';
+
+                // Broadcast chat message to all clients
+                broadcast({
+                    type: 'chat-message',
+                    sender: senderUsername,
+                    message: message.trim(),
+                    timestamp: Date.now()
+                });
+
+                console.log(`Chat: ${senderUsername}: ${message.trim()}`);
             } else if (data.type === 'block-update') {
                 // Handle Block Modification (including air/removal)
                 const { x, y, z, blockName } = data;
-                
+
                 // Validate block update data
-                if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number' || 
+                if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number' ||
                     typeof blockName !== 'string') {
                     console.warn('Invalid block-update data:', data);
                     return;
                 }
-                
+
                 const blockId = BLOCK_IDS[blockName];
 
                 if (blockId !== undefined) {
                     const cx = Math.floor(x / CHUNK_SIZE);
                     const cy = Math.floor(y / CHUNK_SIZE);
                     const cz = Math.floor(z / CHUNK_SIZE);
-                    
+
                     let lx = x % CHUNK_SIZE;
                     let ly = y % CHUNK_SIZE;
                     let lz = z % CHUNK_SIZE;
@@ -359,7 +381,7 @@ wss.on('connection', (ws) => {
 
                     // Save to database
                     await saveWorldModification(chunkKey, localKey, blockId);
-                    
+
                     // If block is air, we can optionally clean up the entry, but keeping it
                     // ensures we track that this block was explicitly removed
 
