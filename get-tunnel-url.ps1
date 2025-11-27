@@ -1,7 +1,7 @@
 # Script to get tunnel URL
 Write-Host "Starting tunnel..." -ForegroundColor Green
-$job = Start-Job -ScriptBlock {
-    cd $using:PWD
+Start-Job -ScriptBlock {
+    Set-Location $using:PWD
     lt --port 2025 2>&1 | Tee-Object -FilePath "$env:TEMP\tunnel-output.txt"
 }
 

@@ -3,6 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
+import {
+    initializeDatabase,
+    loadPlayerData,
+    savePlayerData,
+    loadTimeData,
+    saveTimeData,
+    loadWorldData,
+    saveWorldModification
+} from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,61 +68,52 @@ let gameTime = DAY_DURATION * 0.25; // Start at noon
 let dayNightAccumulator = 0;
 const serverStartTime = Date.now();
 
-// Load Data
-function loadData() {
-    if (fs.existsSync(WORLD_FILE)) {
-        try {
-            const data = fs.readFileSync(WORLD_FILE, 'utf8');
-            worldData = JSON.parse(data);
-            console.log(`World loaded. ${Object.keys(worldData).length} chunks modified.`);
-        } catch (e) {
-            console.error('Failed to load world data:', e);
-            worldData = {};
-        }
-    }
+// Load Data from Database
+async function loadData() {
+    try {
+        // Initialize database connection and schema
+        await initializeDatabase();
 
-    if (fs.existsSync(PLAYERS_FILE)) {
-        try {
-            const data = fs.readFileSync(PLAYERS_FILE, 'utf8');
-            playerData = JSON.parse(data);
-            console.log(`Player data loaded. ${Object.keys(playerData).length} known players.`);
-        } catch (e) {
-            console.error('Failed to load player data:', e);
-            playerData = {};
-        }
-    }
+        // Load world data
+        worldData = await loadWorldData();
+        console.log(`World loaded. ${Object.keys(worldData).length} chunks modified.`);
 
-    if (fs.existsSync(TIME_FILE)) {
-        try {
-            const data = fs.readFileSync(TIME_FILE, 'utf8');
-            timeData = JSON.parse(data);
-            if (timeData.gameTime !== undefined) {
-                gameTime = timeData.gameTime;
-                console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
-            } else {
-                console.log('Time data loaded but no gameTime found, using default.');
-            }
-        } catch (e) {
-            console.error('Failed to load time data:', e);
-            timeData = {};
+        // Load player data
+        playerData = await loadPlayerData();
+        console.log(`Player data loaded. ${Object.keys(playerData).length} known players.`);
+
+        // Load time data
+        timeData = await loadTimeData();
+        if (timeData.gameTime !== undefined) {
+            gameTime = timeData.gameTime;
+            console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
+        } else {
+            console.log('Time data loaded but no gameTime found, using default.');
         }
-    } else {
-        console.log('No time data file found, starting with default time.');
+    } catch (e) {
+        console.error('Failed to load data from database:', e);
+        // Fallback to empty data structures
+        worldData = {};
+        playerData = {};
+        timeData = {};
     }
 }
-loadData();
+await loadData();
 
 // Save Data Function
-function saveData() {
+async function saveData() {
     try {
-        console.log('Saving data...');
-        fs.writeFileSync(WORLD_FILE, JSON.stringify(worldData, null, 2));
-        fs.writeFileSync(PLAYERS_FILE, JSON.stringify(playerData, null, 2));
+        console.log('Saving data to database...');
 
-        // Save current game time
-        timeData.gameTime = gameTime;
-        timeData.lastSaved = Date.now();
-        fs.writeFileSync(TIME_FILE, JSON.stringify(timeData, null, 2));
+        // Save all player data
+        for (const [playerId, data] of Object.entries(playerData)) {
+            await savePlayerData(playerId, data);
+        }
+
+        // Save time data
+        await saveTimeData(gameTime, Date.now());
+
+        // Note: World data is saved incrementally when modifications occur
 
         console.log(`Data saved. Game time: ${gameTime.toFixed(2)}s`);
     } catch (e) {
@@ -122,11 +122,13 @@ function saveData() {
 }
 
 // Auto-save loop
-setInterval(saveData, SAVE_INTERVAL);
+setInterval(() => {
+    saveData().catch(err => console.error('Auto-save failed:', err));
+}, SAVE_INTERVAL);
 
 // Save on exit
-process.on('SIGINT', () => {
-    saveData();
+process.on('SIGINT', async () => {
+    await saveData();
     process.exit();
 });
 
@@ -183,7 +185,7 @@ wss.on('connection', (ws) => {
 
     console.log(`New connection attempt...`);
 
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
             
@@ -317,6 +319,8 @@ wss.on('connection', (ws) => {
                 // Handle inventory update from client
                 if (id && playerData[id] && data.inventory) {
                     playerData[id].inventory = data.inventory;
+                    // Save inventory update to database immediately (critical data)
+                    await savePlayerData(id, playerData[id]);
                 }
             } else if (data.type === 'block-update') {
                 // Handle Block Modification (including air/removal)
@@ -352,7 +356,10 @@ wss.on('connection', (ws) => {
 
                     // Store block update (including air blocks for removal)
                     worldData[chunkKey][localKey] = blockId;
-                    
+
+                    // Save to database
+                    await saveWorldModification(chunkKey, localKey, blockId);
+
                     // If block is air, we can optionally clean up the entry, but keeping it
                     // ensures we track that this block was explicitly removed
 
