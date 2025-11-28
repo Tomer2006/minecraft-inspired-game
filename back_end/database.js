@@ -11,17 +11,24 @@ const pool = new Pool({
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
 
-// Test database connection
-export async function testConnection() {
-    try {
-        const client = await pool.connect();
-        console.log('Database connected successfully');
-        client.release();
-        return true;
-    } catch (err) {
-        console.error('Database connection failed:', err);
-        return false;
+// Test database connection with retry
+export async function testConnection(maxRetries = 5) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Testing database connection (attempt ${attempt}/${maxRetries})...`);
+            const client = await pool.connect();
+            console.log('✅ Database connected successfully');
+            client.release();
+            return true;
+        } catch (err) {
+            console.error(`❌ Database connection failed (attempt ${attempt}/${maxRetries}):`, err.message);
+            if (attempt < maxRetries) {
+                console.log(`⏳ Retrying in 3 seconds...`);
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+        }
     }
+    return false;
 }
 
 // Initialize database schema

@@ -1,0 +1,21 @@
+[databases.postgres]
+# PostgreSQL database configuration
+# Railway will create this automatically when you add PostgreSQL plugin
+
+[services.minecraft-backend]
+# Backend service configuration
+source = { repo = "https://github.com/YOUR_USERNAME/minecraft-inspired-game", path = "back_end" }
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[services.minecraft-backend.env]
+# Environment variables for the backend service
+NODE_ENV = "production"
+
+[services.minecraft-frontend]
+# Frontend service configuration (if deploying frontend to Railway)
+source = { repo = "https://github.com/YOUR_USERNAME/minecraft-inspired-game", path = "front_end" }
+buildCommand = "npm run build"
+staticUrl = "/"

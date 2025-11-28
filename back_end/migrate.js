@@ -34,6 +34,8 @@ async function loadJsonFile(filename) {
 
 async function migrateData() {
     console.log('Starting data migration to PostgreSQL...');
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'NOT SET');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
 
     // Test database connection
     const connected = await testConnection();
