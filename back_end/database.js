@@ -97,10 +97,14 @@ export async function loadPlayerData() {
                 };
 
                 // Validate and clean inventory data
+                // Note: PostgreSQL pg library automatically parses JSONB columns, so row.inventory is already a JS object/array
                 let inventory = row.inventory;
                 if (inventory === null || inventory === undefined) {
                     inventory = [];
-                } else if (typeof inventory === 'string') {
+                }
+
+                // Handle legacy/corrupted data that might be stored as JSON strings
+                if (typeof inventory === 'string') {
                     try {
                         inventory = JSON.parse(inventory);
                     } catch (e) {
@@ -154,6 +158,29 @@ export async function loadPlayerData() {
 export async function savePlayerData(playerId, playerData) {
     try {
         const { position, rotation, inventory } = playerData;
+
+        // Ensure inventory is properly formatted as array of objects
+        let cleanInventory = [];
+        if (Array.isArray(inventory)) {
+            cleanInventory = inventory.map(item => {
+                if (typeof item === 'string') {
+                    try {
+                        return JSON.parse(item);
+                    } catch (e) {
+                        console.error(`Failed to parse inventory item for player ${playerId}:`, item);
+                        return { type: 'air', count: 0 };
+                    }
+                }
+                if (typeof item === 'object' && item !== null) {
+                    return {
+                        type: typeof item.type === 'string' ? item.type : 'air',
+                        count: typeof item.count === 'number' ? item.count : 0
+                    };
+                }
+                return { type: 'air', count: 0 };
+            });
+        }
+
         await pool.query(`
             INSERT INTO players (id, position_x, position_y, position_z, rotation_x, rotation_y, inventory)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -164,7 +191,7 @@ export async function savePlayerData(playerId, playerData) {
                 rotation_x = EXCLUDED.rotation_x,
                 rotation_y = EXCLUDED.rotation_y,
                 inventory = EXCLUDED.inventory
-        `, [playerId, position.x, position.y, position.z, rotation.x, rotation.y, inventory]);
+        `, [playerId, position.x, position.y, position.z, rotation.x, rotation.y, cleanInventory]);
     } catch (err) {
         console.error('Failed to save player data:', err);
         throw err;

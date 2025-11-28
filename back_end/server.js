@@ -155,13 +155,11 @@ await loadData();
 function validatePlayerData(data) {
     if (!data.position || typeof data.position.x !== 'number' ||
         typeof data.position.y !== 'number' || typeof data.position.z !== 'number') {
-        console.error('Invalid position data:', data.position);
         return null;
     }
 
     if (!data.rotation || typeof data.rotation.x !== 'number' ||
         typeof data.rotation.y !== 'number') {
-        console.error('Invalid rotation data:', data.rotation);
         return null;
     }
 
@@ -173,7 +171,6 @@ function validatePlayerData(data) {
         try {
             inventory = JSON.parse(inventory);
         } catch (e) {
-            console.error('Failed to parse inventory JSON in saveData:', e);
             inventory = [];
         }
     }
@@ -185,7 +182,6 @@ function validatePlayerData(data) {
                 try {
                     return JSON.parse(item);
                 } catch (e) {
-                    console.error('Failed to parse inventory item in saveData:', item);
                     return { type: 'air', count: 0 };
                 }
             }
@@ -199,7 +195,6 @@ function validatePlayerData(data) {
             };
         });
     } else {
-        console.error('Invalid inventory format in saveData:', inventory);
         inventory = [];
     }
 
@@ -212,43 +207,30 @@ function validatePlayerData(data) {
 
 async function saveData() {
     try {
-        console.log('💾 Saving data to Railway PostgreSQL database...');
-
         const { savePlayerData, saveTimeData } = await import('./database.js');
 
         // Save all player data with validation
-        let savedCount = 0;
         for (const [playerId, data] of Object.entries(playerData)) {
             const validatedData = validatePlayerData(data);
             if (validatedData) {
                 try {
                     await savePlayerData(playerId, validatedData);
-                    savedCount++;
                 } catch (playerErr) {
-                    console.error(`❌ Failed to save player ${playerId}:`, playerErr);
+                    // Skip this player
                 }
-            } else {
-                console.error(`❌ Skipping invalid player data for ${playerId}`);
             }
         }
-        console.log(`✅ Saved ${savedCount} players`);
 
         // Save time data
         await saveTimeData(gameTime, Date.now());
-        console.log('✅ Saved game time data');
-
-        // Note: World data is saved incrementally when modifications occur
-
-        console.log(`🎮 Data saved successfully. Game time: ${gameTime.toFixed(2)}s`);
     } catch (e) {
-        console.error('❌ Failed to save data to Railway database:', e);
         // Don't crash the server on save failures
     }
 }
 
 // Auto-save loop
 setInterval(() => {
-    saveData().catch(err => console.error('Auto-save failed:', err));
+    saveData().catch(() => {});
 }, SAVE_INTERVAL);
 
 // Save on exit
@@ -524,22 +506,21 @@ wss.on('connection', (ws) => {
 
                         if (playerData[id] && playerData[id].inventory) {
                             playerData[id].inventory = addItemToInventory(playerData[id].inventory, brokenBlockName, 1);
-                            console.log(`📦 Added ${brokenBlockName} to inventory for player ${id}`);
                         }
                     } else {
                         // Block was placed - remove from inventory
                         if (playerData[id] && playerData[id].inventory) {
-                            const oldInventory = [...playerData[id].inventory];
                             playerData[id].inventory = removeItemFromInventory(playerData[id].inventory, blockName, 1);
-                            console.log(`📤 Removed ${blockName} from inventory for player ${id}`);
                         }
                     }
 
                     // Save inventory update to database immediately (critical data)
                     const { savePlayerData } = await import('./database.js');
                     if (playerData[id]) {
-                        await savePlayerData(id, playerData[id]);
-                        console.log(`🎒 Inventory updated for player: ${id}`);
+                        const validatedData = validatePlayerData(playerData[id]);
+                        if (validatedData) {
+                            await savePlayerData(id, validatedData);
+                        }
                     }
 
                     // Broadcast to all other clients
