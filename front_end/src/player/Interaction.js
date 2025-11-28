@@ -29,7 +29,6 @@ export class PlayerInteraction {
 
           const blockType = this.player.terrain.getBlock(x, y, z);
           if (blockType !== BLOCKS.AIR) {
-            console.log(`Breaking block type ${blockType} at ${x}, ${y}, ${z}`);
             this.player.terrain.setBlock(x, y, z, BLOCKS.AIR);
             this.player.inventory.addItem(blockType, 1);
           }
@@ -64,7 +63,6 @@ export class PlayerInteraction {
           if (!intersectsPlayer) {
             const item = this.player.inventory.getSelectedItem();
             if (item.count > 0 && item.type !== BLOCKS.AIR) {
-              console.log(`Placing block type ${item.type} at ${x}, ${y}, ${z}`);
               this.player.terrain.setBlock(x, y, z, item.type);
               this.player.inventory.consumeSelectedItem();
             }

@@ -16,12 +16,47 @@ Service Settings → Public Networking → Enable
 - This gives you: `https://your-project-name-production.up.railway.app`
 - **Copy this URL** - you'll need it for frontend
 
-### 3. Verify Environment Variables
+### 3. **CRITICAL: Set DATABASE_URL Environment Variable**
+```
+Service → Variables Tab → New Variable
+```
+
+**Variable Name:** `DATABASE_URL`
+
+**Variable Value:** `[COPY FROM POSTGRES SERVICE]`
+
+**STEP-BY-STEP: How to get and set DATABASE_URL:**
+
+### Step 1: Get DATABASE_URL from PostgreSQL Service
+1. Go to your Railway project dashboard
+2. **Click on your PostgreSQL service** (named "Postgres" or "minecraft-db")
+3. **Click "Variables" tab** in the PostgreSQL service
+4. **Find the `DATABASE_URL` variable** in the list
+5. **Click the copy icon** next to the DATABASE_URL value
+6. **Copy the entire URL** (it will look like: `postgresql://postgres:xxxxx@postgres.railway.internal:5432/railway`)
+
+### Step 2: Set DATABASE_URL in Backend Service
+1. **Click on your backend service** (named "minecraft-inspired-game")
+2. **Click "Variables" tab** in the backend service
+3. **Click "New Variable"** button
+4. **Variable Name:** `DATABASE_URL`
+5. **Variable Value:** Paste the copied DATABASE_URL from Step 1
+6. **Click "Add"**
+
+### Step 3: Redeploy
+1. Railway will automatically redeploy your backend service
+2. Check the logs - you should see:
+   ```
+   DATABASE_URL: Set ✅
+   ✅ Database connected successfully
+   ```
+
+### 4. Verify All Environment Variables
 ```
 Service → Variables Tab
 ```
 Should show:
-- `DATABASE_URL` ✅ (Auto-set by Railway)
+- `DATABASE_URL` ✅ (You just set this!)
 - `NODE_ENV=production` ✅ (Auto-set by Railway)
 - `PORT` ✅ (Auto-set by Railway)
 

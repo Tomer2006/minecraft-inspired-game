@@ -52,9 +52,7 @@ let multiplayer = null;
 
 DOMElements.btnMultiplayer.addEventListener('click', () => {
     const SHARED_WORLD_SEED = "multiplayer-shared-world-v1";
-    
-    console.log('🌍 Entering multiplayer mode - Will use shared world seed:', SHARED_WORLD_SEED);
-    
+
     if (!multiplayer) {
         multiplayer = new Multiplayer(scene, player, SHARED_WORLD_SEED);
         

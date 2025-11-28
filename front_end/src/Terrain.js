@@ -132,7 +132,7 @@ export class Terrain {
               // onError
               () => {
                   // Keep using fallback
-                  console.log(`Texture textures/${name}.png not found, using procedural.`);
+                  // Texture not found, using procedural fallback
               }
           );
           texture.magFilter = THREE.NearestFilter;
@@ -222,8 +222,6 @@ export class Terrain {
         chunk.setModifiedBlockId(lx, ly, lz, id);
         this.hasUnsavedChanges = true; // Mark that we have unsaved changes
 
-        console.log(`Block ${blockName} integrated into chunk ${chunk.cx},${chunk.cy},${chunk.cz} at local ${lx},${ly},${lz}`);
-
         // Update Meshes
         const meshes = chunk.buildMesh(this.materials);
         Object.values(meshes).forEach(mesh => {
@@ -270,7 +268,7 @@ export class Terrain {
       if (this.hasUnsavedChanges && (now - this.lastSaveTime) > this.autoSaveInterval) {
         // Note: We can't actually save here as we don't have access to WorldHandler
         // This is just a flag for the UI to show "unsaved changes" indicator
-        console.log('Auto-save triggered - unsaved changes detected');
+        // Auto-save triggered - unsaved changes detected
       }
 
       // 1. Identify Missing Chunks in Range
@@ -308,11 +306,10 @@ export class Terrain {
               const mods = chunk.getModifiedBlocks();
               if (mods.length > 0) {
                 this.pendingModifications.set(key, mods);
-                // Don't mark as unsaved changes here because these are already "saved" in memory, 
+                // Don't mark as unsaved changes here because these are already "saved" in memory,
                 // but if we were to save to disk, we need them.
                 // Actually, hasUnsavedChanges should track if *any* change happened since last disk save.
                 // Unloading a chunk doesn't change that status.
-                console.log(`Preserving ${mods.length} modifications for unloaded chunk ${key}`);
               }
 
               // Remove mesh
@@ -406,7 +403,6 @@ export class Terrain {
       if (pendingMods) {
         chunk.loadModifiedBlocks(pendingMods);
         this.pendingModifications.delete(chunkKey);
-        console.log(`Applied ${pendingMods.length} pending modifications to newly generated chunk ${chunkKey}`);
       }
 
       // Build Mesh
@@ -476,11 +472,9 @@ export class Terrain {
         Object.values(meshes).forEach(mesh => {
           if (mesh.parent !== this.group) this.group.add(mesh);
         });
-        console.log(`Loaded ${modifications.length} modifications for chunk ${chunkKey}`);
       } else {
         // Chunk not loaded yet, store for when it gets generated
         this.pendingModifications.set(chunkKey, modifications);
-        console.log(`Stored ${modifications.length} pending modifications for chunk ${chunkKey}`);
       }
     });
   }

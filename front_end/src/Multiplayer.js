@@ -39,12 +39,10 @@ export class Multiplayer {
                 console.error('Please update PRODUCTION_BACKEND_URL in src/Multiplayer.js with your Railway WebSocket URL (change https:// to wss://)');
             }
         }
-        
-        console.log(`Connecting to multiplayer server at ${socketUrl}`);
+
         this.ws = new WebSocket(socketUrl);
 
         this.ws.onopen = () => {
-            console.log('Connected to multiplayer server');
             this.isConnected = true;
             
             // Try to restore previous session ID
@@ -66,7 +64,6 @@ export class Multiplayer {
         };
 
         this.ws.onclose = () => {
-            console.log('Disconnected from server');
             this.isConnected = false;
 
             // Show the Online button when disconnected
@@ -109,12 +106,10 @@ export class Multiplayer {
         switch (data.type) {
             case 'init':
                 this.id = data.id;
-                console.log('My Player ID:', this.id);
                 localStorage.setItem('multiplayer_id', this.id); // Save ID for future sessions
                 
                 // Set initial position from server if provided (persistent location)
                 if (data.position) {
-                    console.log('Restoring position:', data.position);
                     this.localPlayer.head.position.set(data.position.x, data.position.y, data.position.z);
                     this.localPlayer.head.rotation.set(data.rotation.x, data.rotation.y, 0);
                     // Sync physics body
@@ -134,7 +129,6 @@ export class Multiplayer {
                 }
                 // Initialize World
                 if (data.world) {
-                    console.log('Received initial world state');
                     this.localPlayer.terrain.loadModifiedBlocks(data.world);
                 }
                 
@@ -143,7 +137,6 @@ export class Multiplayer {
                     this.serverGameTime = data.gameTime;
                     this.lastServerTimeUpdate = Date.now();
                     this.useServerTime = true;
-                    console.log('Synchronized to server time:', this.serverGameTime);
                 }
                 break;
             case 'player-joined':

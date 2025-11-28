@@ -14,8 +14,6 @@ export class WorldHandler {
 
     // 2. Remove data
     localStorage.removeItem('minecraft_save_' + id);
-
-    console.log(`Deleted world: ${id}`);
   }
 
   renameWorld(id, newName) {
@@ -24,7 +22,6 @@ export class WorldHandler {
     if (world) {
       world.name = newName;
       localStorage.setItem('minecraft_worlds', JSON.stringify(worlds));
-      console.log(`Renamed world: ${id} to ${newName}`);
     }
   }
 
@@ -33,8 +30,7 @@ export class WorldHandler {
     if (this.currentWorldId && this.player.terrain.hasUnsavedChanges) {
         this.saveWorld(this.currentWorldId);
     }
-    
-    console.log(`Loading world: ${id} (New: ${isNew})`);
+
     this.currentWorldId = id;
 
     // 1. Register world in list if new
@@ -82,7 +78,6 @@ export class WorldHandler {
   }
 
   saveWorld(id) {
-    console.log(`Saving world: ${id}`);
     const data = {
       player: {
         x: this.player.head.position.x,
@@ -98,13 +93,9 @@ export class WorldHandler {
     // Mark that changes have been saved
     this.player.terrain.hasUnsavedChanges = false;
     this.player.terrain.lastSaveTime = performance.now();
-
-    console.log(`World saved successfully with ${Object.keys(data.terrain).length} modified chunks`);
   }
 
   unloadWorld() {
-    console.log(`Unloading world: ${this.currentWorldId}`);
-
     // Save the world before unloading if there are unsaved changes
     if (this.currentWorldId && this.player.terrain.hasUnsavedChanges) {
       this.saveWorld(this.currentWorldId);
@@ -122,8 +113,6 @@ export class WorldHandler {
     // Reset terrain change tracking
     this.player.terrain.hasUnsavedChanges = false;
     this.player.terrain.lastSaveTime = 0;
-
-    console.log('World unloaded successfully');
   }
 
   resetPlayer() {

@@ -310,8 +310,6 @@ export class PlayerUI {
 
     if (btnMainMenu) {
       btnMainMenu.addEventListener('click', () => {
-        console.log('Returning to main menu...');
-
         // Disconnect from multiplayer
         if (window.multiplayer) {
           window.multiplayer.disconnect();
@@ -338,15 +336,13 @@ export class PlayerUI {
         overlay.style.display = 'grid';
         menuIngame.style.display = 'none';
         menuMain.style.display = 'flex';
-
-        console.log('Successfully returned to main menu');
       });
     }
 
     btnFullscreen.addEventListener('click', () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
-          console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+          // Handle fullscreen error silently
         });
       } else {
         document.exitFullscreen();
