@@ -112,17 +112,87 @@ async function loadData() {
 await loadData();
 
 // Save Data Function
+// Helper function to validate and clean player data
+function validatePlayerData(data) {
+    if (!data.position || typeof data.position.x !== 'number' ||
+        typeof data.position.y !== 'number' || typeof data.position.z !== 'number') {
+        console.error('Invalid position data:', data.position);
+        return null;
+    }
+
+    if (!data.rotation || typeof data.rotation.x !== 'number' ||
+        typeof data.rotation.y !== 'number') {
+        console.error('Invalid rotation data:', data.rotation);
+        return null;
+    }
+
+    // Validate and clean inventory
+    let inventory = data.inventory;
+    if (inventory === null || inventory === undefined) {
+        inventory = [];
+    } else if (typeof inventory === 'string') {
+        try {
+            inventory = JSON.parse(inventory);
+        } catch (e) {
+            console.error('Failed to parse inventory JSON in saveData:', e);
+            inventory = [];
+        }
+    }
+
+    if (Array.isArray(inventory)) {
+        // Ensure each item is an object with type and count
+        inventory = inventory.map(item => {
+            if (typeof item === 'string') {
+                try {
+                    return JSON.parse(item);
+                } catch (e) {
+                    console.error('Failed to parse inventory item in saveData:', item);
+                    return { type: 'air', count: 0 };
+                }
+            }
+            // Ensure item has required properties
+            if (!item || typeof item !== 'object') {
+                return { type: 'air', count: 0 };
+            }
+            return {
+                type: item.type || 'air',
+                count: typeof item.count === 'number' ? item.count : 0
+            };
+        });
+    } else {
+        console.error('Invalid inventory format in saveData:', inventory);
+        inventory = [];
+    }
+
+    return {
+        position: data.position,
+        rotation: data.rotation,
+        inventory: inventory
+    };
+}
+
 async function saveData() {
     try {
         console.log('💾 Saving data to Railway PostgreSQL database...');
 
         const { savePlayerData, saveTimeData } = await import('./database.js');
 
-        // Save all player data
+        // Save all player data with validation
+        let savedCount = 0;
         for (const [playerId, data] of Object.entries(playerData)) {
-            await savePlayerData(playerId, data);
+            const validatedData = validatePlayerData(data);
+            if (validatedData) {
+                try {
+                    await savePlayerData(playerId, validatedData);
+                    savedCount++;
+                } catch (playerErr) {
+                    console.error(`❌ Failed to save player ${playerId}:`, playerErr);
+                }
+            } else {
+                console.error(`❌ Skipping invalid player data for ${playerId}`);
+            }
         }
-        console.log(`✅ Saved ${Object.keys(playerData).length} players`);
+        console.log(`✅ Saved ${savedCount} players`);
 
         // Save time data
         await saveTimeData(gameTime, Date.now());
@@ -346,7 +416,37 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'inventory-update') {
                 // Handle inventory update from client
                 if (id && playerData[id] && data.inventory) {
-                    playerData[id].inventory = data.inventory;
+                    // Ensure inventory is properly formatted as array of objects
+                    let inventory = data.inventory;
+                    if (typeof inventory === 'string') {
+                        try {
+                            inventory = JSON.parse(inventory);
+                        } catch (e) {
+                            console.error('Failed to parse inventory JSON:', e);
+                            return;
+                        }
+                    }
+
+                    // Validate inventory structure
+                    if (Array.isArray(inventory)) {
+                        // Ensure each item is an object with type and count
+                        inventory = inventory.map(item => {
+                            if (typeof item === 'string') {
+                                try {
+                                    return JSON.parse(item);
+                                } catch (e) {
+                                    console.error('Failed to parse inventory item:', item);
+                                    return { type: 'air', count: 0 };
+                                }
+                            }
+                            return item;
+                        });
+                        playerData[id].inventory = inventory;
+                    } else {
+                        console.error('Invalid inventory format received:', inventory);
+                        return;
+                    }
+
                     // Save inventory update to database immediately (critical data)
                     const { savePlayerData } = await import('./database.js');
                     await savePlayerData(id, playerData[id]);

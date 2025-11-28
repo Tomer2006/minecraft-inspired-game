@@ -82,18 +82,67 @@ export async function loadPlayerData() {
         const result = await pool.query('SELECT * FROM players');
         const playerData = {};
         result.rows.forEach(row => {
-            playerData[row.id] = {
-                position: {
-                    x: row.position_x,
-                    y: row.position_y,
-                    z: row.position_z
-                },
-                rotation: {
-                    x: row.rotation_x,
-                    y: row.rotation_y
-                },
-                inventory: row.inventory
-            };
+            try {
+                // Validate position data
+                const position = {
+                    x: typeof row.position_x === 'number' ? row.position_x : 0,
+                    y: typeof row.position_y === 'number' ? row.position_y : 20,
+                    z: typeof row.position_z === 'number' ? row.position_z : 0
+                };
+
+                // Validate rotation data
+                const rotation = {
+                    x: typeof row.rotation_x === 'number' ? row.rotation_x : 0,
+                    y: typeof row.rotation_y === 'number' ? row.rotation_y : 0
+                };
+
+                // Validate and clean inventory data
+                let inventory = row.inventory;
+                if (inventory === null || inventory === undefined) {
+                    inventory = [];
+                } else if (typeof inventory === 'string') {
+                    try {
+                        inventory = JSON.parse(inventory);
+                    } catch (e) {
+                        console.error(`Failed to parse inventory JSON for player ${row.id}:`, e);
+                        inventory = [];
+                    }
+                }
+
+                if (Array.isArray(inventory)) {
+                    // Ensure each item is properly formatted
+                    inventory = inventory.map(item => {
+                        if (typeof item === 'string') {
+                            try {
+                                return JSON.parse(item);
+                            } catch (e) {
+                                console.error(`Failed to parse inventory item for player ${row.id}:`, item);
+                                return { type: 'air', count: 0 };
+                            }
+                        }
+                        // Ensure item has required properties
+                        if (!item || typeof item !== 'object') {
+                            return { type: 'air', count: 0 };
+                        }
+                        return {
+                            type: item.type || 'air',
+                            count: typeof item.count === 'number' ? item.count : 0
+                        };
+                    });
+                } else {
+                    console.error(`Invalid inventory format for player ${row.id}:`, inventory);
+                    inventory = [];
+                }
+
+                playerData[row.id] = {
+                    position,
+                    rotation,
+                    inventory
+                };
+            } catch (rowErr) {
+                console.error(`Failed to process player data for ${row.id}:`, rowErr);
+                // Skip this corrupted player data
+            }
         });
         return playerData;
     } catch (err) {
