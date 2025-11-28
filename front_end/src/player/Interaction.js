@@ -6,6 +6,7 @@ export class PlayerInteraction {
   constructor(player) {
     this.player = player;
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.far = 4.5; // Set block interaction range to 4.5 blocks
   }
 
   setupInteraction() {
