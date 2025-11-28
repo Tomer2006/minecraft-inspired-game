@@ -220,18 +220,6 @@ process.on('SIGINT', async () => {
 
 
 const server = http.createServer((req, res) => {
-    // Health check endpoint for Railway
-    if (req.url === '/health') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            players: Object.keys(activePlayers).length
-        }));
-        return;
-    }
-
     // Serve files from front_end directory
     let filePath = path.join(__dirname, '..', 'front_end', req.url === '/' ? 'index.html' : req.url);
     
