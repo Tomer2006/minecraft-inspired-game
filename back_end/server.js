@@ -8,9 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 2025;
-const WORLD_FILE = 'world-data.json';
-const PLAYERS_FILE = 'players-data.json';
-const TIME_FILE = 'time-data.json';
 const SAVE_INTERVAL = 30000; // 30 seconds
 
 // --- Game Constants (Mirrored from Chunk.js) ---
@@ -33,18 +30,7 @@ const MIME_TYPES = {
     '.html': 'text/html',
     '.js': 'text/javascript',
     '.css': 'text/css',
-    '.json': 'application/json',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.svg': 'image/svg+xml',
-    '.wav': 'audio/wav',
-    '.mp4': 'video/mp4',
-    '.woff': 'application/font-woff',
-    '.ttf': 'application/font-ttf',
-    '.eot': 'application/vnd.ms-fontobject',
-    '.otf': 'application/font-otf',
-    '.wasm': 'application/wasm'
+    '.png': 'image/png'
 };
 
 // --- Data Storage ---
@@ -57,7 +43,6 @@ let timeData = {};
 // Game Time (Authoritative server time)
 let gameTime = DAY_DURATION * 0.25; // Start at noon
 let dayNightAccumulator = 0;
-const serverStartTime = Date.now();
 
 // Load Data from Database
 async function loadData() {
