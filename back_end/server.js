@@ -3,15 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
-import {
-    initializeDatabase,
-    loadPlayerData,
-    savePlayerData,
-    loadTimeData,
-    saveTimeData,
-    loadWorldData,
-    saveWorldModification
-} from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,32 +61,52 @@ const serverStartTime = Date.now();
 
 // Load Data from Database
 async function loadData() {
-        try {
+    try {
+        console.log('Connecting to Railway PostgreSQL database...');
+
+        // Test database connection first
+        const { testConnection } = await import('./database.js');
+        const connected = await testConnection();
+        if (!connected) {
+            throw new Error('Failed to connect to Railway PostgreSQL database');
+        }
+        console.log('✅ Database connection successful');
+
         // Initialize database connection and schema
+        const { initializeDatabase } = await import('./database.js');
         await initializeDatabase();
+        console.log('✅ Database schema initialized');
 
         // Load world data
+        const { loadWorldData } = await import('./database.js');
         worldData = await loadWorldData();
-            console.log(`World loaded. ${Object.keys(worldData).length} chunks modified.`);
+        console.log(`✅ World loaded. ${Object.keys(worldData).length} chunks modified.`);
 
         // Load player data
+        const { loadPlayerData } = await import('./database.js');
         playerData = await loadPlayerData();
-            console.log(`Player data loaded. ${Object.keys(playerData).length} known players.`);
+        console.log(`✅ Player data loaded. ${Object.keys(playerData).length} known players.`);
 
         // Load time data
+        const { loadTimeData } = await import('./database.js');
         timeData = await loadTimeData();
-            if (timeData.gameTime !== undefined) {
-                gameTime = timeData.gameTime;
-                console.log(`Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
-            } else {
-                console.log('Time data loaded but no gameTime found, using default.');
-            }
-        } catch (e) {
-        console.error('Failed to load data from database:', e);
+        if (timeData.gameTime !== undefined) {
+            gameTime = timeData.gameTime;
+            console.log(`✅ Time data loaded. Game time: ${gameTime.toFixed(2)}s`);
+        } else {
+            console.log('ℹ️ Time data loaded but no gameTime found, using default.');
+        }
+
+        console.log('🎮 Database initialization complete - Minecraft server ready!');
+    } catch (e) {
+        console.error('❌ Failed to load data from Railway database:', e);
+        console.error('💡 Make sure PostgreSQL is added to your Railway project');
         // Fallback to empty data structures
         worldData = {};
         playerData = {};
-            timeData = {};
+        timeData = {};
+        // Don't exit - let the server start with empty data
+        console.log('⚠️ Starting server with empty data structures');
     }
 }
 await loadData();
@@ -103,21 +114,26 @@ await loadData();
 // Save Data Function
 async function saveData() {
     try {
-        console.log('Saving data to database...');
+        console.log('💾 Saving data to Railway PostgreSQL database...');
+
+        const { savePlayerData, saveTimeData } = await import('./database.js');
 
         // Save all player data
         for (const [playerId, data] of Object.entries(playerData)) {
             await savePlayerData(playerId, data);
         }
+        console.log(`✅ Saved ${Object.keys(playerData).length} players`);
 
         // Save time data
         await saveTimeData(gameTime, Date.now());
+        console.log('✅ Saved game time data');
 
         // Note: World data is saved incrementally when modifications occur
 
-        console.log(`Data saved. Game time: ${gameTime.toFixed(2)}s`);
+        console.log(`🎮 Data saved successfully. Game time: ${gameTime.toFixed(2)}s`);
     } catch (e) {
-        console.error('Failed to save data:', e);
+        console.error('❌ Failed to save data to Railway database:', e);
+        // Don't crash the server on save failures
     }
 }
 
@@ -134,6 +150,18 @@ process.on('SIGINT', async () => {
 
 
 const server = http.createServer((req, res) => {
+    // Health check endpoint for Railway
+    if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            players: Object.keys(activePlayers).length
+        }));
+        return;
+    }
+
     // Serve files from front_end directory
     let filePath = path.join(__dirname, '..', 'front_end', req.url === '/' ? 'index.html' : req.url);
     
@@ -320,7 +348,9 @@ wss.on('connection', (ws) => {
                 if (id && playerData[id] && data.inventory) {
                     playerData[id].inventory = data.inventory;
                     // Save inventory update to database immediately (critical data)
+                    const { savePlayerData } = await import('./database.js');
                     await savePlayerData(id, playerData[id]);
+                    console.log(`🎒 Inventory saved for player: ${id}`);
                 }
             } else if (data.type === 'chat-message') {
                 // Handle Chat Message
@@ -380,7 +410,9 @@ wss.on('connection', (ws) => {
                     worldData[chunkKey][localKey] = blockId;
 
                     // Save to database
+                    const { saveWorldModification } = await import('./database.js');
                     await saveWorldModification(chunkKey, localKey, blockId);
+                    console.log(`🧱 Block update saved: ${chunkKey}[${localKey}] = ${blockId}`);
 
                     // If block is air, we can optionally clean up the entry, but keeping it
                     // ensures we track that this block was explicitly removed

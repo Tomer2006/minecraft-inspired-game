@@ -21,11 +21,11 @@ export class Multiplayer {
     }
 
     connect() {
-        // Configuration: Your Render backend URL
-        const PRODUCTION_BACKEND_URL = 'wss://minecraft-inspired-game.onrender.com'; 
+        // Configuration: Your Railway backend URL (change https:// to wss:// for WebSocket)
+        const PRODUCTION_BACKEND_URL = 'wss://minecraft-inspired-game-production.up.railway.app';
 
         let socketUrl;
-        
+
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             // Local development
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -33,10 +33,10 @@ export class Multiplayer {
             const port = 2025;
             socketUrl = `${protocol}//${host}:${port}`;
         } else {
-            // Production (Netlify)
+            // Production (Railway)
             socketUrl = PRODUCTION_BACKEND_URL;
-            if (socketUrl.includes('YOUR_RENDER_URL_HERE')) {
-                console.error('Please update PRODUCTION_BACKEND_URL in src/Multiplayer.js with your Render WebSocket URL');
+            if (socketUrl.includes('YOUR_RAILWAY_URL_HERE')) {
+                console.error('Please update PRODUCTION_BACKEND_URL in src/Multiplayer.js with your Railway WebSocket URL (change https:// to wss://)');
             }
         }
         

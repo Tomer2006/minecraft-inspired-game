@@ -1,26 +1,38 @@
 # PostgreSQL Migration Guide
 
-This guide explains how to migrate your Minecraft-inspired game from JSON file storage to Render's Managed PostgreSQL database.
+This guide explains how to migrate your Minecraft-inspired game from JSON file storage to Railway or Render's Managed PostgreSQL database.
 
 ## Quick Start
 
 For experienced users:
 
-1. Create Render PostgreSQL database
-2. Set `DATABASE_URL` environment variable
+1. Create Railway PostgreSQL database (or Render PostgreSQL database)
+2. Set `DATABASE_URL` environment variable (automatically done on Railway)
 3. Run `npm install && npm run migrate`
-4. Deploy to Render with `DATABASE_URL` set
+4. Deploy to Railway (or Render) with `DATABASE_URL` set
 5. Backup and remove JSON files
 
 See detailed steps below.
 
 ## Prerequisites
 
-1. A Render account with PostgreSQL database provisioned
+1. A Railway account with PostgreSQL database provisioned (or Render account with PostgreSQL)
 2. Node.js environment with npm
 3. Existing JSON data files (players-data.json, time-data.json, world-data.json)
 
-## Step 1: Set up Render PostgreSQL Database
+## Step 1: Set up PostgreSQL Database
+
+### Option A: Railway (Recommended)
+
+1. Log into your Railway dashboard
+2. Create a new project or use an existing one
+3. Add a PostgreSQL database:
+   - Click "Add Plugin" → "PostgreSQL"
+   - Choose a name (e.g., `minecraft-db`)
+   - Railway will automatically create the database and set the `DATABASE_URL` environment variable
+4. The database will be provisioned automatically with no additional configuration needed
+
+### Option B: Render
 
 1. Log into your Render dashboard
 2. Create a new PostgreSQL database:
@@ -49,6 +61,9 @@ Set the `DATABASE_URL` environment variable to point to your Render PostgreSQL d
 ```bash
 export DATABASE_URL="postgresql://username:password@host:port/database"
 ```
+
+### For Railway deployment:
+Railway automatically sets the `DATABASE_URL` environment variable when you add a PostgreSQL database.
 
 ### For Render deployment:
 Add the `DATABASE_URL` environment variable in your Render web service settings.
@@ -96,8 +111,14 @@ This will:
 - Import all existing data from the JSON files
 - Preserve your current game state
 
-## Step 6: Deploy to Render
+## Step 6: Deploy to Railway or Render
 
+### For Railway:
+1. Deploy your updated backend to Railway (it will automatically detect the PostgreSQL database)
+2. Railway will automatically set the `DATABASE_URL` environment variable
+3. Your server will now use PostgreSQL instead of JSON files
+
+### For Render:
 1. Deploy your updated backend to Render
 2. Ensure the `DATABASE_URL` environment variable is set in your Render service
 3. Your server will now use PostgreSQL instead of JSON files

@@ -16,29 +16,43 @@ npm start
 
 The server will run on `http://localhost:2025` (or the port specified by `PORT` environment variable).
 
-## Deployment to Render.com
+## Deployment to Railway
 
-1. **Connect Repository**: Go to [Render Dashboard](https://dashboard.render.com/) and click **New +** -> **Web Service**
+1. **Connect Repository**: Go to [Railway Dashboard](https://railway.app/) and click **New Project** -> **Deploy from GitHub repo**
 
-2. **Connect GitHub**: Link your GitHub repository
+2. **Connect GitHub**: Link your GitHub repository and select the minecraft-inspired-game repository
 
 3. **Configure Settings**:
    - **Name**: `minecraft-backend` (or your preferred name)
-   - **Root Directory**: `back end` (or `backend` if you renamed it)
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node server.js`
-   - **Plan**: Choose Free or Paid plan
+   - **Root Directory**: `back_end`
+   - **Environment Variables**:
+     - `NODE_ENV`: `production`
+     - `DATABASE_URL`: Will be set automatically when you add a PostgreSQL database
+   - Railway will automatically detect this as a Node.js project
 
-4. **Deploy**: Click **Create Web Service** and wait for deployment
+4. **Add Database**: In your Railway project, click **Add Plugin** -> **PostgreSQL**
+   - Choose a name (e.g., `minecraft-db`)
+   - Railway will automatically set the `DATABASE_URL` environment variable
 
-5. **Get WebSocket URL**: Once deployed, copy your Render URL (e.g., `https://minecraft-backend.onrender.com`)
+5. **Deploy**: Railway will automatically build and deploy your application
 
-6. **Update Frontend**: Open `frontend/src/Multiplayer.js` and replace `YOUR_RENDER_URL_HERE` with your Render URL (change `https://` to `wss://`)
+6. **Get WebSocket URL**: Once deployed, go to your project settings and copy the Railway domain (e.g., `minecraft-backend-production.up.railway.app`)
+
+7. **Update Frontend**: Open `front_end/src/Multiplayer.js` and replace `YOUR_RAILWAY_URL_HERE` with your Railway URL (change `https://` to `wss://`)
+
+### Railway vs Render Migration
+
+If you're migrating from Render to Railway:
+
+1. **Database Migration**: Your existing PostgreSQL data can be exported from Render and imported to Railway using Railway's database tools
+2. **Environment Variables**: Railway automatically provides `DATABASE_URL` when you add PostgreSQL
+3. **Zero-downtime Deployment**: Railway supports multiple environments and easy rollbacks
 
 ## Environment Variables
 
-- `PORT`: Server port (defaults to 2025 if not set). Render automatically sets this.
+- `PORT`: Server port (defaults to 2025 if not set). Railway automatically sets this.
+- `DATABASE_URL`: PostgreSQL connection string (automatically provided by Railway when you add a PostgreSQL database)
+- `NODE_ENV`: Set to `production` for Railway deployment
 
 ## Files
 
