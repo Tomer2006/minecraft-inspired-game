@@ -10,6 +10,8 @@ export class Multiplayer {
         this.ws = null;
         this.id = null;
         this.lastUpdate = 0;
+        this.lastInventoryUpdate = 0;
+        this.lastInventoryState = null;
         this.isConnected = false;
         
         // Time synchronization
@@ -114,6 +116,17 @@ export class Multiplayer {
                     this.localPlayer.head.rotation.set(data.rotation.x, data.rotation.y, 0);
                     // Sync physics body
                     this.localPlayer.physics.velocity.set(0, 0, 0);
+                }
+
+                // Load inventory from server if provided
+                if (data.inventory && Array.isArray(data.inventory) && this.localPlayer.inventory) {
+                    this.localPlayer.inventory.slots = data.inventory.map(item => ({
+                        type: item.type || 'air',
+                        count: item.count || 0
+                    }));
+                    this.localPlayer.inventory.updateUI();
+                    // Update last inventory state to prevent immediate re-send
+                    this.lastInventoryState = JSON.stringify(this.localPlayer.inventory.slots);
                 }
 
                 // Initialize existing players
@@ -258,11 +271,30 @@ export class Multiplayer {
         if (now - this.lastUpdate > 50 && this.ws && this.ws.readyState === WebSocket.OPEN) {
             // Explicitly serialize position as plain object to ensure consistency
             const pos = this.localPlayer.head.position;
-            this.ws.send(JSON.stringify({
+
+            // Check if inventory has changed (throttle to avoid excessive updates)
+            let inventoryData = null;
+            if (this.localPlayer.inventory && now - this.lastInventoryUpdate > 200) { // Check every 200ms
+                const currentInventory = JSON.stringify(this.localPlayer.inventory.slots);
+                if (this.lastInventoryState !== currentInventory) {
+                    inventoryData = this.localPlayer.inventory.slots;
+                    this.lastInventoryState = currentInventory;
+                    this.lastInventoryUpdate = now;
+                }
+            }
+
+            const updateMessage = {
                 type: 'update',
                 position: { x: pos.x, y: pos.y, z: pos.z },
                 rotation: { x: this.localPlayer.head.rotation.x, y: this.localPlayer.head.rotation.y }
-            }));
+            };
+
+            // Only include inventory if it changed
+            if (inventoryData) {
+                updateMessage.inventory = inventoryData;
+            }
+
+            this.ws.send(JSON.stringify(updateMessage));
             this.lastUpdate = now;
         }
 

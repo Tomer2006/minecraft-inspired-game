@@ -8,7 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 2025;
-const SAVE_INTERVAL = 30000; // 30 seconds
 
 // --- Game Constants (Mirrored from Chunk.js) ---
 const CHUNK_SIZE = 16;
@@ -183,10 +182,7 @@ async function saveData() {
     }
 }
 
-// Auto-save loop
-setInterval(() => {
-    saveData().catch(err => console.error('Auto-save failed:', err));
-}, SAVE_INTERVAL);
+// Real-time saving: data is saved immediately when changed
 
 // Save on exit
 process.on('SIGINT', async () => {
@@ -339,6 +335,10 @@ wss.on('connection', (ws) => {
                         // Update persistent storage
                         if (playerData[id]) {
                             playerData[id].position = { ...activePlayers[id].position };
+                            // Save immediately when position changes
+                            const { savePlayerData } = await import('./database.js');
+                            savePlayerData(id, playerData[id]).catch(err =>
+                                console.error(`Failed to save position for ${id}:`, err));
                         }
                     }
 
@@ -353,6 +353,31 @@ wss.on('connection', (ws) => {
                         // Update persistent storage
                         if (playerData[id]) {
                             playerData[id].rotation = { ...activePlayers[id].rotation };
+                            // Save immediately when rotation changes
+                            const { savePlayerData } = await import('./database.js');
+                            savePlayerData(id, playerData[id]).catch(err =>
+                                console.error(`Failed to save rotation for ${id}:`, err));
+                        }
+                    }
+
+                    // Handle inventory updates from client
+                    if (data.inventory && Array.isArray(data.inventory)) {
+                        // Validate and update inventory data
+                        const validatedInventory = data.inventory.map(item => ({
+                            type: typeof item.type === 'string' ? item.type : 'air',
+                            count: typeof item.count === 'number' ? Math.max(0, Math.min(999, item.count)) : 0
+                        }));
+
+                        // Update persistent storage if inventory actually changed
+                        if (playerData[id]) {
+                            const inventoryChanged = JSON.stringify(playerData[id].inventory) !== JSON.stringify(validatedInventory);
+                            if (inventoryChanged) {
+                                playerData[id].inventory = validatedInventory;
+                                // Save immediately when inventory changes
+                                const { savePlayerData } = await import('./database.js');
+                                savePlayerData(id, playerData[id]).catch(err =>
+                                    console.error(`Failed to save inventory for ${id}:`, err));
+                            }
                         }
                     }
                 }
@@ -457,11 +482,7 @@ wss.on('connection', (ws) => {
                         }
                     }
 
-                    // Save inventory update to database immediately (critical data)
-                    const { savePlayerData } = await import('./database.js');
-                    if (playerData[id]) {
-                        await savePlayerData(id, playerData[id]);
-                    }
+                    // Inventory saving now handled in real-time via update messages
 
                     // Broadcast to all other clients
                     broadcast({
