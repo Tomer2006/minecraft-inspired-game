@@ -97,46 +97,21 @@ export async function loadPlayerData() {
                 };
 
                 // Validate and clean inventory data
-                // Note: PostgreSQL pg library automatically parses JSONB columns, so row.inventory is already a JS object/array
                 let inventory = row.inventory;
-                if (inventory === null || inventory === undefined) {
+                if (!Array.isArray(inventory)) {
                     inventory = [];
                 }
 
-                // Handle legacy/corrupted data that might be stored as JSON strings
-                if (typeof inventory === 'string') {
-                    try {
-                        inventory = JSON.parse(inventory);
-                    } catch (e) {
-                        console.error(`Failed to parse inventory JSON for player ${row.id}:`, e);
-                        inventory = [];
+                // Ensure each item has required properties
+                inventory = inventory.map(item => {
+                    if (!item || typeof item !== 'object') {
+                        return { type: 'air', count: 0 };
                     }
-                }
-
-                if (Array.isArray(inventory)) {
-                    // Ensure each item is properly formatted
-                    inventory = inventory.map(item => {
-                        if (typeof item === 'string') {
-                            try {
-                                return JSON.parse(item);
-                            } catch (e) {
-                                console.error(`Failed to parse inventory item for player ${row.id}:`, item);
-                                return { type: 'air', count: 0 };
-                            }
-                        }
-                        // Ensure item has required properties
-                        if (!item || typeof item !== 'object') {
-                            return { type: 'air', count: 0 };
-                        }
-                        return {
-                            type: item.type || 'air',
-                            count: typeof item.count === 'number' ? item.count : 0
-                        };
-                    });
-                } else {
-                    console.error(`Invalid inventory format for player ${row.id}:`, inventory);
-                    inventory = [];
-                }
+                    return {
+                        type: item.type || 'air',
+                        count: typeof item.count === 'number' ? item.count : 0
+                    };
+                });
 
                 playerData[row.id] = {
                     position,

@@ -151,86 +151,41 @@ async function loadData() {
 await loadData();
 
 // Save Data Function
-// Helper function to validate and clean player data
-function validatePlayerData(data) {
-    if (!data.position || typeof data.position.x !== 'number' ||
-        typeof data.position.y !== 'number' || typeof data.position.z !== 'number') {
-        return null;
-    }
-
-    if (!data.rotation || typeof data.rotation.x !== 'number' ||
-        typeof data.rotation.y !== 'number') {
-        return null;
-    }
-
-    // Validate and clean inventory
-    let inventory = data.inventory;
-    if (inventory === null || inventory === undefined) {
-        inventory = [];
-    } else if (typeof inventory === 'string') {
-        try {
-            inventory = JSON.parse(inventory);
-        } catch (e) {
-            inventory = [];
-        }
-    }
-
-    if (Array.isArray(inventory)) {
-        // Ensure each item is an object with type and count
-        inventory = inventory.map(item => {
-            if (typeof item === 'string') {
-                try {
-                    return JSON.parse(item);
-                } catch (e) {
-                    return { type: 'air', count: 0 };
-                }
-            }
-            // Ensure item has required properties
-            if (!item || typeof item !== 'object') {
-                return { type: 'air', count: 0 };
-            }
-            return {
-                type: item.type || 'air',
-                count: typeof item.count === 'number' ? item.count : 0
-            };
-        });
-    } else {
-        inventory = [];
-    }
-
-    return {
-        position: data.position,
-        rotation: data.rotation,
-        inventory: inventory
-    };
-}
 
 async function saveData() {
     try {
+        console.log('💾 Saving data to Railway PostgreSQL database...');
+
         const { savePlayerData, saveTimeData } = await import('./database.js');
 
-        // Save all player data with validation
+        // Save all player data
+        let savedCount = 0;
         for (const [playerId, data] of Object.entries(playerData)) {
-            const validatedData = validatePlayerData(data);
-            if (validatedData) {
-                try {
-                    await savePlayerData(playerId, validatedData);
-                } catch (playerErr) {
-                    // Skip this player
-                }
+            try {
+                await savePlayerData(playerId, data);
+                savedCount++;
+            } catch (playerErr) {
+                console.error(`❌ Failed to save player ${playerId}:`, playerErr);
             }
         }
+        console.log(`✅ Saved ${savedCount} players`);
 
         // Save time data
         await saveTimeData(gameTime, Date.now());
+        console.log('✅ Saved game time data');
+
+        // Note: World data is saved incrementally when modifications occur
+
+        console.log(`🎮 Data saved successfully. Game time: ${gameTime.toFixed(2)}s`);
     } catch (e) {
+        console.error('❌ Failed to save data to Railway database:', e);
         // Don't crash the server on save failures
     }
 }
 
 // Auto-save loop
 setInterval(() => {
-    saveData().catch(() => {});
+    saveData().catch(err => console.error('Auto-save failed:', err));
 }, SAVE_INTERVAL);
 
 // Save on exit
@@ -323,21 +278,9 @@ wss.on('connection', (ws) => {
                     username: data.username || `Player${Math.floor(Math.random() * 1000)}`
                 };
 
-                // If no saved inventory, initialize with starter items
+                // Initialize empty inventory if none exists
                 if (!playerData[id].inventory) {
-                    playerData[id].inventory = [
-                        { type: 'grass', count: 999 },
-                        { type: 'dirt', count: 999 },
-                        { type: 'stone', count: 999 },
-                        { type: 'snow', count: 999 },
-                        { type: 'air', count: 0 }, // 4
-                        { type: 'air', count: 0 }, // 5
-                        { type: 'air', count: 0 }, // 6
-                        { type: 'air', count: 0 }, // 7
-                        { type: 'air', count: 0 }, // 8
-                        // Rest of inventory slots are air
-                        ...Array(27).fill({ type: 'air', count: 0 })
-                    ];
+                    playerData[id].inventory = Array(36).fill({ type: 'air', count: 0 });
                 }
 
                 // Send Init Packet
@@ -517,10 +460,7 @@ wss.on('connection', (ws) => {
                     // Save inventory update to database immediately (critical data)
                     const { savePlayerData } = await import('./database.js');
                     if (playerData[id]) {
-                        const validatedData = validatePlayerData(playerData[id]);
-                        if (validatedData) {
-                            await savePlayerData(id, validatedData);
-                        }
+                        await savePlayerData(id, playerData[id]);
                     }
 
                     // Broadcast to all other clients
