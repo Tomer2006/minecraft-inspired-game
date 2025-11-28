@@ -2,10 +2,11 @@ import { BLOCKS } from './Chunk.js';
 import { DOMElements } from './domElements.js';
 
 export class Inventory {
-  constructor() {
+  constructor(player = null) {
+    this.player = player; // Reference to player for multiplayer updates
     this.INVENTORY_SIZE = 36; // 9 hotbar + 27 main
     this.HOTBAR_SIZE = 9;
-    
+
     // Inventory State
     this.slots = new Array(this.INVENTORY_SIZE).fill(null).map(() => ({ type: BLOCKS.AIR, count: 0 }));
     this.selectedSlot = 0; // 0-8 (Hotbar)
@@ -210,7 +211,7 @@ export class Inventory {
         }
       }
     }
-    
+
     this.updateUI();
     return count === 0; // true if fully added
   }

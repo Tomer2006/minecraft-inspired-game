@@ -253,7 +253,7 @@ export class Multiplayer {
     }
 
     update(delta) {
-        // Send update to server (20 times per second max)
+        // Send position/rotation update to server (20 times per second max)
         const now = performance.now();
         if (now - this.lastUpdate > 50 && this.ws && this.ws.readyState === WebSocket.OPEN) {
             // Explicitly serialize position as plain object to ensure consistency

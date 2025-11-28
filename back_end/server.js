@@ -44,6 +44,60 @@ let timeData = {};
 let gameTime = DAY_DURATION * 0.25; // Start at noon
 let dayNightAccumulator = 0;
 
+// Inventory helper functions (server-side)
+function addItemToInventory(inventory, itemType, count) {
+    if (!Array.isArray(inventory)) {
+        inventory = [];
+    }
+
+    // First try to add to existing stacks of the same type
+    for (let i = 0; i < inventory.length; i++) {
+        if (inventory[i].type === itemType && inventory[i].count < 64) {
+            const spaceAvailable = 64 - inventory[i].count;
+            const addAmount = Math.min(count, spaceAvailable);
+            inventory[i].count += addAmount;
+            count -= addAmount;
+            if (count <= 0) break;
+        }
+    }
+
+    // If there's still count left, find empty slots
+    if (count > 0) {
+        for (let i = 0; i < inventory.length; i++) {
+            if (inventory[i].type === 'air' || inventory[i].count === 0) {
+                inventory[i] = { type: itemType, count: Math.min(count, 64) };
+                count -= Math.min(count, 64);
+                if (count <= 0) break;
+            }
+        }
+    }
+
+    return inventory;
+}
+
+function removeItemFromInventory(inventory, itemType, count) {
+    if (!Array.isArray(inventory)) {
+        return inventory;
+    }
+
+    // Find and remove items from inventory
+    for (let i = 0; i < inventory.length; i++) {
+        if (inventory[i].type === itemType && inventory[i].count > 0) {
+            const removeAmount = Math.min(count, inventory[i].count);
+            inventory[i].count -= removeAmount;
+            count -= removeAmount;
+
+            if (inventory[i].count === 0) {
+                inventory[i].type = 'air';
+            }
+
+            if (count <= 0) break;
+        }
+    }
+
+    return inventory;
+}
+
 // Load Data from Database
 async function loadData() {
     try {
@@ -345,30 +399,32 @@ wss.on('connection', (ws) => {
                 }, ws);
 
             } else if (data.type === 'update') {
+                // Handle Position/Rotation Update from client
                 if (id && activePlayers[id]) {
-                    // Validate position data structure
-                    if (data.position && typeof data.position.x === 'number' && 
+
+                    // Validate and accept position data (server remains authoritative for persistence)
+                    if (data.position && typeof data.position.x === 'number' &&
                         typeof data.position.y === 'number' && typeof data.position.z === 'number') {
                         activePlayers[id].position = {
                             x: data.position.x,
                             y: data.position.y,
                             z: data.position.z
                         };
-                        
+
                         // Update persistent storage
                         if (playerData[id]) {
                             playerData[id].position = { ...activePlayers[id].position };
                         }
                     }
-                    
-                    // Validate rotation data structure
-                    if (data.rotation && typeof data.rotation.x === 'number' && 
+
+                    // Validate and accept rotation data
+                    if (data.rotation && typeof data.rotation.x === 'number' &&
                         typeof data.rotation.y === 'number') {
                         activePlayers[id].rotation = {
                             x: data.rotation.x,
                             y: data.rotation.y
                         };
-                        
+
                         // Update persistent storage
                         if (playerData[id]) {
                             playerData[id].rotation = { ...activePlayers[id].rotation };
@@ -385,45 +441,6 @@ wss.on('connection', (ws) => {
                         id: id,
                         username: activePlayers[id].username
                     }, ws);
-                }
-            } else if (data.type === 'inventory-update') {
-                // Handle inventory update from client
-                if (id && playerData[id] && data.inventory) {
-                    // Ensure inventory is properly formatted as array of objects
-                    let inventory = data.inventory;
-                    if (typeof inventory === 'string') {
-                        try {
-                            inventory = JSON.parse(inventory);
-                        } catch (e) {
-                            console.error('Failed to parse inventory JSON:', e);
-                            return;
-                        }
-                    }
-
-                    // Validate inventory structure
-                    if (Array.isArray(inventory)) {
-                        // Ensure each item is an object with type and count
-                        inventory = inventory.map(item => {
-                            if (typeof item === 'string') {
-                                try {
-                                    return JSON.parse(item);
-                                } catch (e) {
-                                    console.error('Failed to parse inventory item:', item);
-                                    return { type: 'air', count: 0 };
-                                }
-                            }
-                            return item;
-                        });
-                        playerData[id].inventory = inventory;
-                    } else {
-                        console.error('Invalid inventory format received:', inventory);
-                        return;
-                    }
-
-                    // Save inventory update to database immediately (critical data)
-                    const { savePlayerData } = await import('./database.js');
-                    await savePlayerData(id, playerData[id]);
-                    console.log(`🎒 Inventory saved for player: ${id}`);
                 }
             } else if (data.type === 'chat-message') {
                 // Handle Chat Message
@@ -487,8 +504,43 @@ wss.on('connection', (ws) => {
                     await saveWorldModification(chunkKey, localKey, blockId);
                     console.log(`🧱 Block update saved: ${chunkKey}[${localKey}] = ${blockId}`);
 
-                    // If block is air, we can optionally clean up the entry, but keeping it
-                    // ensures we track that this block was explicitly removed
+                    // Update player inventory automatically
+                    if (blockId === 0) {
+                        // Block was broken (placed air) - add the broken block to inventory
+                        // Check what block was actually at this position before it was broken
+                        let brokenBlockName = 'grass'; // Default fallback
+
+                        // Try to determine what block was there by checking current world state
+                        // Since this is a break operation, we need to know what was there before
+                        // For now, we'll use a simple heuristic based on position/depth
+                        const depth = Math.abs(y);
+                        if (depth === 0) {
+                            brokenBlockName = 'grass';
+                        } else if (depth <= 3) {
+                            brokenBlockName = 'dirt';
+                        } else {
+                            brokenBlockName = 'stone';
+                        }
+
+                        if (playerData[id] && playerData[id].inventory) {
+                            playerData[id].inventory = addItemToInventory(playerData[id].inventory, brokenBlockName, 1);
+                            console.log(`📦 Added ${brokenBlockName} to inventory for player ${id}`);
+                        }
+                    } else {
+                        // Block was placed - remove from inventory
+                        if (playerData[id] && playerData[id].inventory) {
+                            const oldInventory = [...playerData[id].inventory];
+                            playerData[id].inventory = removeItemFromInventory(playerData[id].inventory, blockName, 1);
+                            console.log(`📤 Removed ${blockName} from inventory for player ${id}`);
+                        }
+                    }
+
+                    // Save inventory update to database immediately (critical data)
+                    const { savePlayerData } = await import('./database.js');
+                    if (playerData[id]) {
+                        await savePlayerData(id, playerData[id]);
+                        console.log(`🎒 Inventory updated for player: ${id}`);
+                    }
 
                     // Broadcast to all other clients
                     broadcast({

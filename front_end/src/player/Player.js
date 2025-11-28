@@ -45,7 +45,7 @@ export class Player {
     this.maxFps = 0; // 0 = Unlimited
 
     // Inventory
-    this.inventory = new Inventory();
+    this.inventory = new Inventory(this);
 
     // Sub-modules
     this.settings = new PlayerSettings(this);
