@@ -69,8 +69,9 @@ export class WorldHandler {
     } else {
       // Brand new world
       this.resetPlayer();
-      // For new worlds, we use the ID as the seed for now
-      this.player.terrain.loadModifiedBlocks([], id);
+      // Generate a random seed for new worlds to ensure unique terrain generation
+      const randomSeed = 'seed_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      this.player.terrain.loadModifiedBlocks([], randomSeed);
     }
 
     // 3. Start Game
