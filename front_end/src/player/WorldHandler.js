@@ -124,11 +124,12 @@ export class WorldHandler {
     physics.velocity.set(0, 0, 0);
     // Reset inventory? Maybe keep it? Let's reset.
     this.player.inventory.slots.forEach(s => { s.type = BLOCKS.AIR; s.count = 0; });
-    // Give starter items
-    this.player.inventory.addItem(BLOCKS.GRASS, 999);
-    this.player.inventory.addItem(BLOCKS.DIRT, 999);
-    this.player.inventory.addItem(BLOCKS.STONE, 999);
-    this.player.inventory.addItem(BLOCKS.SNOW, 999);
+    // Give starter items - 999 of every block type except air
+    Object.values(BLOCKS).forEach(blockType => {
+      if (blockType !== BLOCKS.AIR) {
+        this.player.inventory.addItem(blockType, 999);
+      }
+    });
   }
 }
 
