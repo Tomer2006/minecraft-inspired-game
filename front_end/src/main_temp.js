@@ -112,11 +112,13 @@ const SKY_COLOR_DAY = new THREE.Color(0x87CEEB);
 const SKY_COLOR_NIGHT = new THREE.Color(0x050510);
 const SKY_COLOR_SUNSET = new THREE.Color(0xfd5e53);
 
-let lastTimePhase = -1;
 let lastSunY = 0;
 let lastSunAngle = 0;
-const UPDATE_THRESHOLD = 0.02;
-const ANGLE_THRESHOLD = 0.05;
+// Update sky/sun/lighting roughly every 30 seconds
+// DAY_DURATION = 1200s, full cycle = 2π radians
+// 30s = (30/1200) * 2π = π/20 ≈ 0.157 radians
+const UPDATE_THRESHOLD = Math.PI / 20;
+const ANGLE_THRESHOLD = Math.PI / 20;
 
 const DAY_NIGHT_TICK_RATE = 20;
 const DAY_NIGHT_STEP = 1000 / DAY_NIGHT_TICK_RATE;
@@ -188,47 +190,35 @@ function animate() {
   if (Math.abs(sunY - lastSunY) > UPDATE_THRESHOLD) {
     lastSunY = sunY;
 
-    let currentTimePhase;
+    // Update sky colors and lighting roughly every 30 seconds
     if (sunY > 0.2) {
-        currentTimePhase = 0;
+        scene.background.copy(SKY_COLOR_DAY);
+        scene.fog.color.copy(SKY_COLOR_DAY);
+        dirLight.color.setHex(0xffffff);
+        dirLight.intensity = 1.0;
+        hemiLight.intensity = 0.6;
     } else if (sunY > -0.2) {
-        currentTimePhase = 1;
+        const t = (sunY + 0.2) / 0.4;
+
+        if (sunY > 0) {
+            const mix = sunY / 0.2;
+            scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
+            scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
+            dirLight.intensity = 0.5 + 0.5 * mix;
+            dirLight.color.setHex(0xffdcb5);
+        } else {
+            const mix = (sunY + 0.2) / 0.2;
+            scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
+            scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
+            dirLight.intensity = 0.5 * mix;
+            dirLight.color.setHex(0xffdcb5);
+        }
+        hemiLight.intensity = 0.2 + 0.4 * t;
     } else {
-        currentTimePhase = 2;
-    }
-
-    if (currentTimePhase !== lastTimePhase || lastTimePhase === -1) {
-      lastTimePhase = currentTimePhase;
-
-      if (sunY > 0.2) {
-          scene.background.copy(SKY_COLOR_DAY);
-          scene.fog.color.copy(SKY_COLOR_DAY);
-          dirLight.color.setHex(0xffffff);
-          dirLight.intensity = 1.0;
-          hemiLight.intensity = 0.6;
-      } else if (sunY > -0.2) {
-          const t = (sunY + 0.2) / 0.4;
-
-          if (sunY > 0) {
-              const mix = sunY / 0.2;
-              scene.background.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-              scene.fog.color.copy(SKY_COLOR_SUNSET).lerp(SKY_COLOR_DAY, mix);
-              dirLight.intensity = 0.5 + 0.5 * mix;
-              dirLight.color.setHex(0xffdcb5);
-          } else {
-              const mix = (sunY + 0.2) / 0.2;
-              scene.background.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-              scene.fog.color.copy(SKY_COLOR_NIGHT).lerp(SKY_COLOR_SUNSET, mix);
-              dirLight.intensity = 0.5 * mix;
-              dirLight.color.setHex(0xffdcb5);
-          }
-          hemiLight.intensity = 0.2 + 0.4 * t;
-      } else {
-          scene.background.copy(SKY_COLOR_NIGHT);
-          scene.fog.color.copy(SKY_COLOR_NIGHT);
-          dirLight.intensity = 0;
-          hemiLight.intensity = 0.1;
-      }
+        scene.background.copy(SKY_COLOR_NIGHT);
+        scene.fog.color.copy(SKY_COLOR_NIGHT);
+        dirLight.intensity = 0;
+        hemiLight.intensity = 0.1;
     }
   }
 
