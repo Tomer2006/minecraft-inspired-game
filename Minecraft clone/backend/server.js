@@ -14,15 +14,7 @@ const SAVE_INTERVAL = 30000; // 30 seconds
 
 // --- Game Constants (Mirrored from Chunk.js) ---
 const CHUNK_SIZE = 16;
-const BLOCK_IDS = {
-  'air': 0,
-  'grass': 1,
-  'dirt': 2,
-  'stone': 3,
-  'snow': 4,
-  'wood': 5,
-  'leaves': 6
-};
+const VALID_BLOCKS = ['air', 'grass', 'dirt', 'stone', 'snow', 'wood', 'leaves'];
 
 const MIME_TYPES = {
     '.html': 'text/html',
@@ -43,7 +35,7 @@ const MIME_TYPES = {
 };
 
 // --- Data Storage ---
-// World: { "cx,cy,cz": { "lx,ly,lz": blockId } }
+// World: { "cx,cy,cz": { "lx,ly,lz": blockName } }
 let worldData = {};
 // Players: { "playerId": { position: {x,y,z}, rotation: {x,y} } }
 let playerData = {};
@@ -138,7 +130,7 @@ function getChunkKey(cx, cy, cz) {
 function getInitialWorldState() {
     const exportData = {};
     for (const [chunkKey, modifications] of Object.entries(worldData)) {
-        exportData[chunkKey] = Object.entries(modifications).map(([key, id]) => [key, id]);
+        exportData[chunkKey] = Object.entries(modifications).map(([key, blockName]) => [key, blockName]);
     }
     return exportData;
 }
@@ -214,9 +206,8 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'block-update') {
                 // Handle Block Modification
                 const { x, y, z, blockName } = data;
-                const blockId = BLOCK_IDS[blockName];
 
-                if (blockId !== undefined) {
+                if (VALID_BLOCKS.includes(blockName)) {
                     const cx = Math.floor(x / CHUNK_SIZE);
                     const cy = Math.floor(y / CHUNK_SIZE);
                     const cz = Math.floor(z / CHUNK_SIZE);
@@ -235,7 +226,7 @@ wss.on('connection', (ws) => {
                         worldData[chunkKey] = {};
                     }
 
-                    worldData[chunkKey][localKey] = blockId;
+                    worldData[chunkKey][localKey] = blockName;
 
                     broadcast({
                         type: 'block-update',
