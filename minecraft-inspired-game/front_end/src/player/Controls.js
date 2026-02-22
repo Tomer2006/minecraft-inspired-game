@@ -6,6 +6,12 @@ export class PlayerControls {
     this.player = player;
   }
 
+  isInGameSession() {
+    const isSinglePlayer = !!this.player.worldHandler?.currentWorldId;
+    const isMultiplayer = !!(window.multiplayer && window.multiplayer.isConnected);
+    return isSinglePlayer || isMultiplayer;
+  }
+
   setupCustomControls() {
     // Mimic PointerLockControls but with sensitivity support
     this.player.controls = {
@@ -70,6 +76,11 @@ export class PlayerControls {
 
   setupInputs() {
     const onKeyDown = (event) => {
+      // Disable gameplay controls on title/main menu screens.
+      if (!this.isInGameSession()) {
+        return;
+      }
+
       // If chat is open, don't process any controls
       if (window.chat && window.chat.isOpen) {
         return;

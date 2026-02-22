@@ -57,6 +57,7 @@ export class PlayerUI {
     const overlay = DOMElements.overlay;
     const menuMain = DOMElements.menuMain;
     const menuIngame = DOMElements.menuIngame;
+    if (!overlay || !menuMain || !menuIngame) return;
 
     // Unified unlock handler - shows menu when controls unlock
     this.player.controls.addEventListener('lock', () => {
@@ -105,6 +106,10 @@ export class PlayerUI {
     const overlay = DOMElements.overlay;
     const menuMain = DOMElements.menuMain;
     const menuIngame = DOMElements.menuIngame;
+    const menuPlay = DOMElements.menuPlay;
+    const menuCreate = DOMElements.menuCreate;
+    const menuRename = DOMElements.menuRename;
+    const menuOptions = DOMElements.menuOptions;
 
     // 1. Unload single player world if exists
     if (this.player.worldHandler?.currentWorldId) {
@@ -141,20 +146,33 @@ export class PlayerUI {
     const spawnHeight = this.player.terrain.getHeightAtWorld(0, 0);
     this.player.head.position.set(0, spawnHeight + eyeHeight + 5, 8);
     this.player.physics.velocity.set(0, 0, 0);
+    this.player.movementState.forward = false;
+    this.player.movementState.backward = false;
+    this.player.movementState.left = false;
+    this.player.movementState.right = false;
+    this.player.movementState.jump = false;
+    this.player.movementState.sneak = false;
 
     // 7. Unlock controls if locked
-    if (this.player.controls.isLocked) {
+    const pointerLocked = DOMElements.document.pointerLockElement === DOMElements.body;
+    if (this.player.controls.isLocked || pointerLocked) {
       this.player.controls.unlock();
     }
 
-    // 8. Show main menu
-    overlay.style.display = 'grid';
-    menuIngame.style.display = 'none';
-    menuMain.style.display = 'flex';
-    
+    // 8. Reset all menu screens, then show main menu
+    if (menuIngame) menuIngame.style.display = 'none';
+    if (menuPlay) menuPlay.style.display = 'none';
+    if (menuCreate) menuCreate.style.display = 'none';
+    if (menuRename) menuRename.style.display = 'none';
+    if (menuOptions) menuOptions.style.display = 'none';
+
     // Show Scene 0 (menu scene) when returning to main menu
-    if (this.mainMenuUI) {
+    if (this.mainMenuUI && typeof this.mainMenuUI.show === 'function') {
+      this.mainMenuUI.show();
       this.mainMenuUI.isVisible = true;
+    } else {
+      if (overlay) overlay.style.display = 'grid';
+      if (menuMain) menuMain.style.display = 'flex';
     }
   }
 

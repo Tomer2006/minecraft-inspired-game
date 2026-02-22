@@ -514,6 +514,26 @@ export class Terrain {
     return allModified;
   }
 
+  clearModifiedBlocks() {
+    // Clear persisted modifications for unloaded chunks.
+    this.pendingModifications.clear();
+
+    // Clear modifications for loaded chunks and rebuild meshes where needed.
+    this.chunks.forEach((chunk) => {
+      if (chunk.modifiedBlocks && chunk.modifiedBlocks.size > 0) {
+        chunk.modifiedBlocks.clear();
+        chunk.needsUpdate = true;
+        const meshes = chunk.buildMesh(this.materials);
+        Object.values(meshes).forEach(mesh => {
+          if (mesh.parent !== this.group) this.group.add(mesh);
+        });
+      }
+    });
+
+    this.hasUnsavedChanges = false;
+    this.lastSaveTime = performance.now();
+  }
+
   loadModifiedBlocks(data, seed) {
     if (seed) {
         this.setSeed(seed);
@@ -561,4 +581,3 @@ export class Terrain {
 }
 
 export default Terrain;
-

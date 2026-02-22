@@ -405,19 +405,25 @@ body {
   margin-top: 10px;
 }
 
-#keybind-list div:first-child {
+#keybind-list .keybind-label {
   text-align: left;
   color: #aaa;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
-#keybind-list div:nth-child(2) {
-  text-align: right;
-  font-weight: bold;
-  color: #66aaff;
-  background: rgba(102, 170, 255, 0.1);
-  padding: 2px 8px;
-  border-radius: 3px;
-  min-width: 80px;
+#keybind-list .keybind-controls {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+#keybind-list .keybind-controls .menu-btn {
+  width: auto;
+  white-space: nowrap;
 }
 
 /* Username Modal Styles */

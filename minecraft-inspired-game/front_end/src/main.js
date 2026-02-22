@@ -154,6 +154,14 @@ if (player.ui && player.ui.mainMenuUI) {
 
 // Handle chat keybind (configurable) - must be before controls setup
 document.addEventListener('keydown', (event) => {
+    const isSinglePlayer = !!player.worldHandler?.currentWorldId;
+    const isMultiplayer = !!(window.multiplayer && window.multiplayer.isConnected);
+    const isPlaying = isSinglePlayer || isMultiplayer;
+
+    if (!isPlaying) {
+        return;
+    }
+
     // Handle chat keybind when not in menus
     if (player && player.keybinds && event.code === (player.keybinds.chat || 'KeyT') && !event.repeat) {
         // Don't trigger if typing in an input field
@@ -421,6 +429,8 @@ function animate() {
   const menuRename = DOMElements.menuRename;
   const menuOptions = DOMElements.menuOptions;
   const menuIngame = DOMElements.menuIngame;
+  const hotbar = DOMElements.hotbar;
+  const coordsDisplay = DOMElements.coordsDisplay;
   
   // Determine if player is in-game
   const isSinglePlayer = !!player.worldHandler?.currentWorldId;
@@ -437,6 +447,15 @@ function animate() {
                         (menuRename && (menuRename.style.display === 'flex' || menuRename.style.display === 'grid')) ||
                         (optionsVisible && !optionsFromGame); // Only include options in Scene 0 if NOT from in-game
   // menuIngame and menuOptions (when from in-game) are NOT included here - they use Scene 1
+
+  // Hide gameplay HUD while in main menu screens (without overriding display logic from inventory/settings)
+  const shouldHideGameplayHud = isMenuVisible;
+  if (hotbar) {
+    hotbar.style.visibility = shouldHideGameplayHud ? 'hidden' : 'visible';
+  }
+  if (coordsDisplay) {
+    coordsDisplay.style.visibility = shouldHideGameplayHud ? 'hidden' : 'visible';
+  }
   
   if (isMenuVisible) {
     // Render Scene 0: Menu Scene
