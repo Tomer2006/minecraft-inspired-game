@@ -41,6 +41,14 @@ export class PlayerUI {
     // Setup unified unlock handler that determines which menu to show
     this.setupUnlockHandler();
     
+    // Main Menu button: go to scene 0 (main menu) from in-game menu
+    const btnMainMenu = DOMElements.btnMainMenu;
+    if (btnMainMenu) {
+      btnMainMenu.addEventListener('click', () => {
+        this.exitToMainMenu();
+      });
+    }
+    
     // Show main menu scene initially
     this.mainMenuUI.show();
   }

@@ -179,9 +179,13 @@ export class Inventory {
   toggle() {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
+      // Show cursor so player can click inventory slots
+      if (this.player?.controls?.unlock) this.player.controls.unlock();
       if (this.inventoryScreenEl) this.inventoryScreenEl.style.display = 'flex';
       this.updateUI();
     } else {
+      // Hide cursor again for gameplay
+      if (this.player?.controls?.lock) this.player.controls.lock();
       if (this.inventoryScreenEl) this.inventoryScreenEl.style.display = 'none';
       this.updateUI();
     }

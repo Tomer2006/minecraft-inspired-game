@@ -21,15 +21,14 @@ export class MultiplayerUI {
     const btnMultiplayer = DOMElements.btnMultiplayer;
     const btnResume = DOMElements.btnResume;
     const btnOptionsIngame = DOMElements.btnOptionsIngame;
-    const btnMainMenu = DOMElements.btnMainMenu;
     const usernameModal = DOMElements.usernameModal;
     const btnJoinMultiplayer = DOMElements.btnJoinMultiplayer;
     const btnCancelUsername = DOMElements.btnCancelUsername;
     const inpUsername = DOMElements.inpUsername;
 
     // Note: Settings UI setup is handled by PlayerUI.setupOverlay() to ensure it's only called once
+    // Main Menu button is handled in PlayerUI.setupOverlay() so it works in both single player and multiplayer
 
-    // Multiplayer button - handled in main.js, but we can set up the modal here
     if (btnResume) {
       btnResume.addEventListener('click', () => {
         this.player.controls.lock();
@@ -40,16 +39,6 @@ export class MultiplayerUI {
       btnOptionsIngame.addEventListener('click', () => {
         menuIngame.style.display = 'none';
         this.settingsUI.show();
-      });
-    }
-
-    if (btnMainMenu) {
-      btnMainMenu.addEventListener('click', () => {
-        // Completely exit game and return to main menu
-        // This is handled by PlayerUI.exitToMainMenu() which resets all game state
-        if (this.player.ui) {
-          this.player.ui.exitToMainMenu();
-        }
       });
     }
 

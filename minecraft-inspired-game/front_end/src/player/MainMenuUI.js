@@ -4,7 +4,7 @@ import { SettingsUI } from './SettingsUI.js';
 
 /**
  * Main Menu UI - handles the main menu screen (title screen)
- * This is separate from the in-game UI and handles navigation to singleplayer/multiplayer
+ * This is separate from the in-game UI and handles main-menu navigation
  * Uses a separate Three.js Scene for 3D menu rendering
  */
 export class MainMenuUI {
@@ -45,20 +45,13 @@ export class MainMenuUI {
   }
 
   _setupEventListeners() {
-    const overlay = DOMElements.overlay;
     const menuMain = DOMElements.menuMain;
     const menuPlay = DOMElements.menuPlay;
     const btnPlay = DOMElements.btnPlay;
-    const btnMultiplayer = DOMElements.btnMultiplayer;
     const btnOptions = DOMElements.btnOptions;
-    const usernameModal = DOMElements.usernameModal;
-    const btnJoinMultiplayer = DOMElements.btnJoinMultiplayer;
-    const btnCancelUsername = DOMElements.btnCancelUsername;
-    const inpUsername = DOMElements.inpUsername;
 
     // Debug: Log if elements are missing (helps diagnose issues)
     if (!btnPlay) console.warn('MainMenuUI: btnPlay element not found - button will not work');
-    if (!btnMultiplayer) console.warn('MainMenuUI: btnMultiplayer element not found - button will not work');
     if (!btnOptions) console.warn('MainMenuUI: btnOptions element not found - button will not work');
 
     // Singleplayer button - navigate to world selection
@@ -74,18 +67,6 @@ export class MainMenuUI {
       });
     }
 
-    // Online/Multiplayer button - show username modal
-    if (btnMultiplayer) {
-      btnMultiplayer.addEventListener('click', async () => {
-        // Show username input modal
-        if (usernameModal) usernameModal.style.display = 'grid';
-        if (inpUsername) {
-          inpUsername.focus();
-          inpUsername.select();
-        }
-      });
-    }
-
     // Options button - show settings
     if (btnOptions) {
       btnOptions.addEventListener('click', () => {
@@ -93,53 +74,6 @@ export class MainMenuUI {
         this.settingsUI.show();
       });
     }
-
-    // Join Multiplayer button - call callback if set (by main.js)
-    if (btnJoinMultiplayer) {
-      btnJoinMultiplayer.addEventListener('click', () => {
-        // Get username from input
-        const username = inpUsername ? inpUsername.value.trim() : '';
-        const displayName = username ? username.substring(0, 20) : 'Player' + Math.floor(Math.random() * 1000);
-        
-        // Hide modal
-        if (usernameModal) usernameModal.style.display = 'none';
-        
-        // Call callback if set (main.js will handle multiplayer connection)
-        if (this.onJoinMultiplayer) {
-          this.onJoinMultiplayer(displayName);
-        }
-      });
-    }
-
-    // Cancel Username button
-    if (btnCancelUsername) {
-      btnCancelUsername.addEventListener('click', () => {
-        // Hide modal and return to main menu
-        if (usernameModal) usernameModal.style.display = 'none';
-      });
-    }
-
-    // Handle keyboard input in username modal
-    // Note: This is set up here, but could also be handled globally
-    // We'll set up a listener that checks if modal is visible
-    this._setupKeyboardHandlers();
-  }
-
-  _setupKeyboardHandlers() {
-    document.addEventListener('keydown', (event) => {
-      const usernameModal = DOMElements.usernameModal;
-      if (usernameModal && usernameModal.style.display === 'grid') {
-        if (event.key === 'Enter') {
-          // Simulate clicking join button
-          const btnJoinMultiplayer = DOMElements.btnJoinMultiplayer;
-          if (btnJoinMultiplayer) btnJoinMultiplayer.click();
-        } else if (event.key === 'Escape') {
-          // Simulate clicking cancel button
-          const btnCancelUsername = DOMElements.btnCancelUsername;
-          if (btnCancelUsername) btnCancelUsername.click();
-        }
-      }
-    });
   }
 
   handleSettingsBack() {
