@@ -431,6 +431,7 @@ function animate() {
   const menuIngame = DOMElements.menuIngame;
   const hotbar = DOMElements.hotbar;
   const coordsDisplay = DOMElements.coordsDisplay;
+  const chatContainer = DOMElements.chatContainer;
   
   // Determine if player is in-game
   const isSinglePlayer = !!player.worldHandler?.currentWorldId;
@@ -455,6 +456,9 @@ function animate() {
   }
   if (coordsDisplay) {
     coordsDisplay.style.visibility = shouldHideGameplayHud ? 'hidden' : 'visible';
+  }
+  if (chatContainer) {
+    chatContainer.style.visibility = shouldHideGameplayHud ? 'hidden' : 'visible';
   }
   
   if (isMenuVisible) {
