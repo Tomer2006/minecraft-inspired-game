@@ -1,23 +1,19 @@
 # Minecraft-Inspired Game
 
-This project is a Minecraft-style voxel game built with JavaScript and Three.js.
-It runs in the browser as a single-player sandbox experience.
+This is a single-player building and exploration game inspired by Minecraft.
+You can walk around a blocky world, place and remove blocks, and shape the world however you want.
 
 ## What It Is
 
-- A first-person voxel sandbox inspired by Minecraft
-- Frontend includes menus, world selection/creation, inventory, hotbar, chat, and gameplay UI
-- Focused on local single-player gameplay
+- A first-person sandbox game
+- You can create a world and play on your own
+- You can build, explore, and manage items
+- The game includes menus, settings, inventory, and on-screen game tools
 
-## Project Structure
+## Goal Of The Project
 
-- `minecraft-inspired-game/front_end`: Browser client (Vite + Three.js)
+The goal is to recreate the feel of classic Minecraft-style gameplay in a simple browser game focused on single-player fun.
 
-## Run Locally
+## How To Start
 
-1. Start the frontend:
-```bash
-cd minecraft-inspired-game/front_end
-npm install
-npm run dev
-```
+Open the game in your browser and start a world from the main menu.
