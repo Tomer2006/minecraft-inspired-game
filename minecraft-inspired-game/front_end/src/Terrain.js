@@ -5,7 +5,7 @@ import { Chunk, CHUNK_SIZE, BLOCKS } from './Chunk.js';
 
 export class Terrain {
   constructor({
-    renderDistance = 5, // Radius in chunks
+    renderDistance = 12, // Radius in chunks
     noiseScale = 48,
     amplitude = 20,
     baseHeight = 6,

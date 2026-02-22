@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { Terrain } from './Terrain.js';
+import { CHUNK_SIZE } from './Chunk.js';
 import { Player } from './player/Player.js';
 import { Multiplayer } from './Multiplayer.js';
 import { Chat } from './Chat.js';
@@ -19,6 +20,19 @@ document.body.appendChild(renderer.domElement);
 // Scene 0: Menu scene (main menu + world selection)
 // Scene 1: Game scene
 const scenes = [];
+const DEFAULT_RENDER_DISTANCE = 12;
+const FOG_EDGE_OFFSET_CHUNKS = 0.0;
+const FOG_NEAR_RATIO = 0.5;
+
+function getFogDistancesFromRenderDistance(renderDistance) {
+  const safeRenderDistance = Math.max(2, Number(renderDistance) || DEFAULT_RENDER_DISTANCE);
+  // Terrain loads chunks from -renderDistance..+renderDistance around the player chunk.
+  // The visible edge is roughly renderDistance to renderDistance+1 chunks away,
+  // so we place fog end near the middle of that boundary range.
+  const fogFar = (safeRenderDistance + FOG_EDGE_OFFSET_CHUNKS) * CHUNK_SIZE;
+  const fogNear = fogFar * FOG_NEAR_RATIO;
+  return { fogNear, fogFar };
+}
 
 // Scene 0: Menu Scene
 scenes[0] = new THREE.Scene();
@@ -26,9 +40,10 @@ scenes[0].background = new THREE.Color(0x4a90a4);
 scenes[0].fog = new THREE.Fog(0x4a90a4, 10, 50);
 
 // Scene 1: Game Scene
+const { fogNear: initialFogNear, fogFar: initialFogFar } = getFogDistancesFromRenderDistance(DEFAULT_RENDER_DISTANCE);
 scenes[1] = new THREE.Scene();
 scenes[1].background = new THREE.Color(0x87CEEB);
-scenes[1].fog = new THREE.Fog(0x87CEEB, 80, 220);
+scenes[1].fog = new THREE.Fog(0x87CEEB, initialFogNear, initialFogFar);
 
 // Expose scenes globally for access by UI components
 window.scenes = scenes;
@@ -83,7 +98,7 @@ scene.add(moonMesh);
 
 // Terrain
 const terrain = new Terrain({
-  renderDistance: 5, // Radius in chunks
+  renderDistance: DEFAULT_RENDER_DISTANCE, // Radius in chunks
   noiseScale: 48,
   amplitude: 20,
   baseHeight: 6,
@@ -94,6 +109,20 @@ scene.add(terrainMesh);
 
 // Player (Controls, Physics, Inventory)
 const player = new Player(scenes[1], camera, terrain, renderer);
+
+let lastFogRenderDistance = null;
+function syncFogWithRenderDistance() {
+  if (!scene.fog) return;
+
+  const currentRenderDistance = terrain.renderDistance;
+  if (currentRenderDistance === lastFogRenderDistance) return;
+
+  const { fogNear, fogFar } = getFogDistancesFromRenderDistance(currentRenderDistance);
+  scene.fog.near = fogNear;
+  scene.fog.far = fogFar;
+  lastFogRenderDistance = currentRenderDistance;
+}
+syncFogWithRenderDistance();
 
 // Multiplayer
 let multiplayer = null;
@@ -252,6 +281,7 @@ let fpsLimitAccumulator = 0;
 
 function animate() {
   requestAnimationFrame(animate);
+  syncFogWithRenderDistance();
 
   const now = performance.now();
   const rawDelta = now - lastFrameTime;
